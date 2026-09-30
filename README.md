@@ -6,7 +6,7 @@ recorded lectures and certificates in one place.
 
 | Folder     | What it is                                   | Status            |
 |------------|----------------------------------------------|-------------------|
-| `backend/` | Node.js + Express API, PostgreSQL via Prisma | API: auth, courses, enrollment, payments |
+| `backend/` | Node.js + Express API, PostgreSQL via Prisma | API: auth, courses, enrollment, payments, admin |
 | `web/`     | React.js website                             | Not started       |
 | `mobile/`  | React Native (Expo) app                      | Not started       |
 | `docs/`    | Decisions log and build roadmap              | —                 |

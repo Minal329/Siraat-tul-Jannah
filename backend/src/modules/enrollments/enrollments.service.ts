@@ -42,6 +42,8 @@ function toStudentEnrollment(enrollment: EnrollmentWithDetails) {
           startDate: group.startDate,
           endDate: group.endDate,
           teacherName: group.teacher?.fullName ?? null,
+          // Only students currently in the group get the invite link.
+          whatsappGroupLink: enrollment.status === "APPROVED" ? group.whatsappGroupLink : null,
         }
       : null,
     certificate: enrollment.certificate,

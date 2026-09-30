@@ -148,3 +148,27 @@ enrollment — that's a separate admin decision (step 8).
   Storage keys are pattern-checked so a crafted path can't reach outside the uploads folder.
 - **One payment waiting at a time** per enrollment keeps the admin queue clean; reviews use a
   conditional update so two admins clicking at once can't both review the same payment.
+
+## 019 — Admin workflow: approval needs a verified payment, unless deliberate
+Admins approve a PENDING enrollment **into a class group** in one step (a student never
+sits "approved but groupless"). Approving without a verified payment returns
+`409 PAYMENT_NOT_VERIFIED` unless the request says `approveWithoutPayment: true` — so
+scholarships and cash payments are possible, but never by accident. Rejections need a
+reason the student sees. Approved students can be moved to another group of the same
+course; "complete" closes the enrollment, allowing a new batch later and (step 11) a certificate.
+Group capacity is checked while holding a row lock on the group, because a plain
+"count, then insert" lets two simultaneous approvals both take the last seat (a test
+showed this happening in 3 of 5 runs without the lock).
+**Alternative:** approve first, assign a group later — more flexible, but it creates
+approved students with no class, WhatsApp group or teacher.
+
+## 020 — Staff accounts and passwords
+Admins create teachers from the dashboard; the teacher gets a strong temporary password,
+shown once (response marked `Cache-Control: no-store`), and changes it with
+`POST /auth/change-password`. Changing a password logs out every other device. Admins can
+disable any account except their own (disabling logs it out everywhere).
+A wrong current password returns **400**, not 401, because the apps treat 401 as
+"session expired, log in again".
+While testing this we found a flaw in decision 012: a second device refreshing with a
+token revoked by a password change looked like theft and logged the user out everywhere.
+Tokens now record `rotatedAt`, and only replaying a *rotated* token counts as theft.
