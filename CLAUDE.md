@@ -41,18 +41,24 @@ Logo: open book + pen in a gold sunburst circle badge.
 - `app.ts` builds the Express app; `server.ts` starts it. Tests import `createApp()`.
 - `config/env.ts` validates env vars with zod — read settings from `env`, never `process.env`.
 - `lib/prisma.ts` — the single shared Prisma client.
-- `routes/index.ts` mounts one router per feature under `/api/v1` (e.g. `/health`).
+- `routes/index.ts` mounts one router per feature under `/api/v1`.
+- Features live in `modules/<feature>/`: `*.routes.ts` (HTTP: validate → call service → respond),
+  `*.service.ts` (business logic, no HTTP), `*.schemas.ts` (zod request bodies).
+- Auth: `requireAuth` then `requireRole("ADMIN")` from `middleware/requireAuth.ts`; handlers read
+  `req.auth.userId` / `req.auth.role`. Access JWT 15 min + rotating refresh token (hashed in
+  `refresh_tokens`). Public signup only creates STUDENTs. Never return `passwordHash` — use `toPublicUser`.
 - Errors: `throw new AppError(status, "CODE", "message")`; `middleware/errorHandler.ts`
   turns every error into `{ error: { code, message, details? } }`. Success = `{ data }`.
 - Local imports use the `.ts` extension (ESM + `rewriteRelativeImportExtensions`).
 
 ## Commands (run inside `backend/`)
 - `npm run dev` — start the API with auto-restart on http://localhost:4000/api/v1
-- `npm test` — run tests (vitest + supertest; database is mocked)
+- `npm test` — run tests (vitest + supertest). Needs Postgres running: DB tests use `siraat_test`
+  (auto-migrated, wiped between tests; `tests/helpers/db.ts` has `resetDatabase` / `createUser`).
 - `npm run typecheck` — TypeScript check, includes tests
 - `npm run build` / `npm start` — compile to `dist/` and run the compiled server
-- `npm run db:migrate` — create/apply a migration after editing the schema
-- `npm run db:generate` — regenerate the Prisma client
+- `npm run db:migrate` — create/apply a migration after editing the schema, **then**
+- `npm run db:generate` — regenerate the Prisma client (Prisma 7 no longer does this on migrate)
 - `npm run db:studio` — browse the database in a GUI
 - Local DB URL lives in `backend/.env` (copy from `.env.example`; never commit `.env`).
 

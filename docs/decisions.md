@@ -71,3 +71,31 @@ database, and fails if `schema.prisma` was edited without a matching migration.
 The result shows as ✅ or ❌ on the PR, so nothing depends on remembering to run checks.
 **Alternative:** other hosted CI services (CircleCI, GitLab CI) work similarly, but
 GitHub Actions is built into GitHub and free for this size of project.
+
+## 012 — Login: short access token + rotating refresh token
+Login returns a JWT **access token** (15 minutes) and a random **refresh token**
+(30 days). Apps send the access token with every request; when it expires they
+swap the refresh token for a fresh pair. Refresh tokens are stored only as SHA-256
+hashes, change on every use ("rotation"), and replaying an old one logs that user
+out everywhere (sign of theft). `requireAuth` also re-reads the user on every
+request, so disabling an account or changing a role takes effect immediately.
+**Alternative:** one long-lived JWT (e.g. 7 days) — simpler, but it can't be revoked:
+logout and "disable this account" wouldn't work until it expired.
+Tokens are returned in the JSON body (what the mobile app needs). For the web app
+we'll decide in step 12 whether to move the refresh token into an httpOnly cookie.
+
+## 013 — Password and brute-force rules
+bcrypt with cost 12 (≈250 ms per hash). Passwords must be 8+ characters and at most
+72 bytes, because bcrypt ignores anything past 72 bytes. Login failures are limited
+to 10 per 15 minutes per IP *and* email: many Pakistani mobile users share a public IP
+(carrier NAT), so a pure per-IP limit could lock out a whole neighbourhood.
+Wrong password and unknown email return the identical error, so the login form
+can't be used to find out who is registered.
+
+## 014 — Tests use a real, separate database
+Auth logic lives mostly in the database (unique emails, token rows), so its tests run
+against a real Postgres database named `siraat_test`, migrated automatically and wiped
+between tests. The helpers refuse to touch any database whose name doesn't end in `_test`.
+Pure HTTP behaviour (e.g. the health check's 503 path) still uses a mocked database.
+**Alternative:** mock the database everywhere — faster, but it would only test our
+guesses about how Postgres behaves, not Postgres itself.

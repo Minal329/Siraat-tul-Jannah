@@ -8,6 +8,12 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required (see backend/.env.example)"),
+  // Signs access tokens. Anyone who knows it can forge logins, so it must be
+  // long, random, secret, and different in every environment.
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters (see backend/.env.example)"),
+  // bcrypt work factor: each +1 doubles hashing time. 12 ≈ 250 ms, which slows
+  // down password guessing without making login feel slow. Tests use 4.
+  BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
   CORS_ORIGINS: z
     .string()
     .default("http://localhost:5173")

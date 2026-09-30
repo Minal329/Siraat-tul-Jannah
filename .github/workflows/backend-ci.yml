@@ -42,6 +42,8 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://siraat:siraat_ci@localhost:5432/siraat_ci?schema=public
+      # Tests use their own database (created automatically), wiped between tests.
+      TEST_DATABASE_URL: postgresql://siraat:siraat_ci@localhost:5432/siraat_test?schema=public
 
     steps:
       - uses: actions/checkout@v7
@@ -61,7 +63,7 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Unit tests
+      - name: Tests
         run: npm test
 
       - name: Build

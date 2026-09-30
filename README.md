@@ -16,12 +16,13 @@ Requires Node.js 20.19+ and PostgreSQL 14+.
 
 ```bash
 cd backend
-cp .env.example .env        # then edit DATABASE_URL with your Postgres login
+cp .env.example .env        # then set DATABASE_URL and JWT_SECRET (instructions inside)
 npm install
 npm run db:migrate          # creates all tables
+npm run db:generate         # generates the database client code
 npm run dev                 # start the API
 # then open http://localhost:4000/api/v1/health
-npm test                    # run the automated tests
+npm test                    # run the automated tests (uses a separate siraat_test database)
 ```
 
 See `docs/roadmap.md` for what's next and `docs/decisions.md` for why things are built this way.

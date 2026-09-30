@@ -8,7 +8,7 @@ import morgan from "morgan";
 import { env } from "./config/env.ts";
 import { errorHandler } from "./middleware/errorHandler.ts";
 import { notFound } from "./middleware/notFound.ts";
-import { apiRouter } from "./routes/index.ts";
+import { createApiRouter } from "./routes/index.ts";
 
 export function createApp() {
   const app = express();
@@ -22,7 +22,7 @@ export function createApp() {
 
   // Versioned prefix: installed mobile apps can't be force-updated, so breaking
   // changes will go under /api/v2 while old apps keep using /api/v1.
-  app.use("/api/v1", apiRouter);
+  app.use("/api/v1", createApiRouter());
 
   app.use(notFound);
   app.use(errorHandler);
