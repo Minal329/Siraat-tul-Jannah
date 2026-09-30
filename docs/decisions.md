@@ -111,3 +111,23 @@ generated, never from a command-line flag, because typed commands end up in shel
 **Alternative:** one seed script that also creates the real admin — simpler, but
 it mixes throwaway test accounts with a real one and makes it easy to ship a
 known password to production.
+
+## 016 — Courses: public catalog, admin area, never deleted
+Anyone can browse **published** courses at `/courses` without logging in (the catalog is
+the academy's shop window). Admins manage all courses at `/admin/courses`; every
+staff-only feature will live under `/admin/...` so it's obvious which endpoints need
+the strictest checks. Courses are **unpublished, never deleted**: deleting one would
+erase students' enrollment and certificate history. Slugs (`/courses/tajweed-ul-quran`)
+are made from the title automatically; titles with no Latin letters (e.g. Urdu script)
+must be given a slug by hand.
+**Alternative:** one `/courses` endpoint that shows extra data when an admin is logged
+in — fewer URLs, but easier to leak draft courses or internal fields by mistake.
+
+## 017 — Enrolling: two layers for the one-active-enrollment rule
+`POST /enrollments` first checks for an existing PENDING/APPROVED enrollment and returns
+a friendly `409 ENROLLMENT_EXISTS`. Two taps arriving at the same instant can both pass
+that check, so the database's partial unique index stops the second one and we turn its
+error into the same friendly message. A test fires 5 simultaneous requests and proves
+exactly one succeeds; removing the second layer makes that test fail.
+Students can cancel their own **pending** application (then re-apply); approved ones
+need the academy. Someone else's enrollment answers `404`, never `403`, so IDs can't be probed.

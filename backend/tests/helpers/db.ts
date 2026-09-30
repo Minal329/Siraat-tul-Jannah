@@ -41,3 +41,17 @@ export async function createUser(options: {
   });
   return { ...user, password };
 }
+
+// Creates a course directly in the database. Published unless told otherwise.
+export async function createCourse(overrides: Partial<{ title: string; slug: string; feePkr: number; isPublished: boolean }> = {}) {
+  const slug = overrides.slug ?? `course-${crypto.randomUUID().slice(0, 8)}`;
+  return prisma.course.create({
+    data: {
+      title: overrides.title ?? "Test Course",
+      slug,
+      description: "A course used in automated tests.",
+      feePkr: overrides.feePkr ?? 2000,
+      isPublished: overrides.isPublished ?? true,
+    },
+  });
+}

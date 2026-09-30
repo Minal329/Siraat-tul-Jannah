@@ -49,6 +49,12 @@ Logo: open book + pen in a gold sunburst circle badge.
   `refresh_tokens`). Public signup only creates STUDENTs. Never return `passwordHash` — use `toPublicUser`.
 - Create accounts of any role with `createUserWithProfile` (`modules/users/users.service.ts`);
   pass a transaction client as the 2nd argument when inside `prisma.$transaction`.
+- Endpoints so far: `/health`, `/auth/*`, `/courses` (public, published only), `/enrollments`
+  (students: apply, `/mine`, `/:id/cancel`), `/admin/courses`. Staff-only endpoints go under `/admin/...`.
+- IDs in URLs: `parseId(req.params.id, "Course")` (`utils/parseId.ts`) → 404 for non-UUIDs.
+- Public responses are built field by field (`toPublicCourse` etc.): never expose Zoom passcodes,
+  WhatsApp group links or other students' data to people who shouldn't see them.
+- Courses are never deleted, only unpublished (`isPublished: false`) — history must survive.
 - One-off command-line tools live in `src/scripts/` (seed, create-admin) and export their core
   function so tests can call it.
 - Errors: `throw new AppError(status, "CODE", "message")`; `middleware/errorHandler.ts`
