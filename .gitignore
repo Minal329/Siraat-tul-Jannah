@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+
+# Generated code (re-create with `npx prisma generate`)
+backend/generated/
+
+# Build output
+dist/
+build/
+.expo/
+web-build/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
