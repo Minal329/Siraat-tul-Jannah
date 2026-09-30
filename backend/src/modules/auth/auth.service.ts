@@ -1,11 +1,12 @@
 // The business logic of logging in. Routes call these functions; they don't
 // know about HTTP, which keeps them easy to read and test.
 import bcrypt from "bcrypt";
-import { Prisma } from "../../../generated/prisma/client.ts";
+import type { Prisma } from "../../../generated/prisma/client.ts";
 import type { Role } from "../../../generated/prisma/enums.ts";
 import { env } from "../../config/env.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { AppError } from "../../utils/AppError.ts";
+import { createUserWithProfile } from "../users/users.service.ts";
 import type { LoginInput, RegisterInput } from "./auth.schemas.ts";
 import {
   ACCESS_TOKEN_TTL_SECONDS,
@@ -52,28 +53,7 @@ async function issueTokens(user: { id: string; role: Role }) {
 
 // Public signup always creates a STUDENT. Teachers and admins are created by an admin.
 export async function register(input: RegisterInput) {
-  const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_ROUNDS);
-
-  let user: UserWithProfile;
-  try {
-    // Nested create: the users row and the students row are saved together or not at all.
-    user = await prisma.user.create({
-      data: {
-        email: input.email,
-        passwordHash,
-        role: "STUDENT",
-        student: { create: { fullName: input.fullName, whatsappNumber: input.whatsappNumber } },
-      },
-      include: userWithProfile,
-    });
-  } catch (err) {
-    // P2002 = unique constraint failed, i.e. the email is already registered.
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      throw new AppError(409, "EMAIL_TAKEN", "An account with this email already exists.");
-    }
-    throw err;
-  }
-
+  const user = await createUserWithProfile({ ...input, role: "STUDENT" });
   return { user: toPublicUser(user), tokens: await issueTokens(user) };
 }
 

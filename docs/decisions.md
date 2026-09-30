@@ -99,3 +99,15 @@ between tests. The helpers refuse to touch any database whose name doesn't end i
 Pure HTTP behaviour (e.g. the health check's 503 path) still uses a mocked database.
 **Alternative:** mock the database everywhere — faster, but it would only test our
 guesses about how Postgres behaves, not Postgres itself.
+
+## 015 — Sample data and the first admin are separate tools
+`npm run db:seed` fills an empty development database with sample people, courses,
+enrollments and classes. It refuses to run in production, skips if any users
+exist, and runs in one transaction so it never half-finishes. Placeholders are
+marked `[SAMPLE]` and must be replaced with real details before launch.
+`npm run create-admin` is the production-safe way to create real admins (starting
+with the founder's account). The password comes from `ADMIN_PASSWORD` or is
+generated, never from a command-line flag, because typed commands end up in shell history.
+**Alternative:** one seed script that also creates the real admin — simpler, but
+it mixes throwaway test accounts with a real one and makes it easy to ship a
+known password to production.
