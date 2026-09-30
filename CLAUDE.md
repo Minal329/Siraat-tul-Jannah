@@ -57,7 +57,15 @@ Logo: open book + pen in a gold sunburst circle badge.
   their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`,
   `/teacher/feedback` (send text/voice, list sent), `/feedback/mine`, `/feedback/:id/read`,
   `/feedback/:id/voice` (student, its teacher, or admin), `/lectures` (students), `/teacher/lectures`,
-  `/admin/certificates` (issue), `/certificates/verify/:number` (public), `/certificates/:number/pdf`.
+  `/admin/certificates` (issue), `/certificates/verify/:number` (public), `/certificates/:number/pdf`,
+  `/teacher/sessions/:id/start|live|end`, `/enrollments/:id/live` + `/live/join`,
+  `/admin/class-groups/zoom-status`, `/admin/class-groups/:id/zoom-meeting`.
+- Live classes: SCHEDULED → (start) LIVE → (end) COMPLETED, only via those endpoints (PATCH may only
+  reschedule/cancel). Only one LIVE class per group — hand-written partial unique index
+  `class_sessions_one_live_per_group`. While live the teacher can switch `livePlatform` ZOOM ⇄ WHATSAPP.
+  Students' "Join" is stored in `session_joins` (first join only) — a hint for attendance, not attendance.
+  A LIVE class older than 6 h is treated as over (`isLiveNow`). Zoom API is optional (`lib/zoom.ts`,
+  `ZOOM_*` env vars); `zoomJoinLink(group)` is the link students get.
 - Lecture videos are links to a video service (YouTube unlisted / Vimeo / Bunny) — never uploaded to
   our server. `toEmbedUrl` turns YouTube/Vimeo links into in-app player URLs.
 - Certificates: numbers `STJ-<year>-<00001>-<4 random chars>`; the running number is assigned under a

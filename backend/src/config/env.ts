@@ -19,6 +19,12 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().min(1).default("uploads"),
   // The website's address, printed on certificates as the "verify this certificate" link.
   PUBLIC_WEB_URL: z.url().default("http://localhost:5173"),
+  // Optional: lets admins create Zoom meetings from the dashboard. Comes from a
+  // "Server-to-Server OAuth" app in the academy's Zoom account (see docs/deployment.md).
+  // Leave all three empty to paste meeting IDs by hand instead.
+  ZOOM_ACCOUNT_ID: z.string().trim().optional().transform((v) => v || undefined),
+  ZOOM_CLIENT_ID: z.string().trim().optional().transform((v) => v || undefined),
+  ZOOM_CLIENT_SECRET: z.string().trim().optional().transform((v) => v || undefined),
   CORS_ORIGINS: z
     .string()
     .default("http://localhost:5173")

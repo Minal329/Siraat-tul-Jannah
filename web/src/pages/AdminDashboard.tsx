@@ -302,17 +302,18 @@ function CoursesTab() {
 
 function GroupsTab() {
   const state = useLoad(async () => {
-    const [{ classGroups }, { courses }, { teachers }] = await Promise.all([
+    const [{ classGroups }, { courses }, { teachers }, { zoomConfigured }] = await Promise.all([
       api<{ classGroups: AdminClassGroup[] }>("/admin/class-groups"),
       api<{ courses: AdminCourse[] }>("/admin/courses"),
       api<{ teachers: TeacherSummary[] }>("/admin/teachers"),
+      api<{ zoomConfigured: boolean }>("/admin/class-groups/zoom-status"),
     ]);
-    return { classGroups, courses, teachers };
+    return { classGroups, courses, teachers, zoomConfigured };
   }, []);
 
   return (
     <Loaded state={state}>
-      {({ classGroups, courses, teachers }) => (
+      {({ classGroups, courses, teachers, zoomConfigured }) => (
         <>
           <NewGroupForm courses={courses} teachers={teachers.filter((t) => t.isActive)} onCreated={state.reload} />
           <div className="list">
@@ -328,12 +329,31 @@ function GroupsTab() {
                 <div className="muted small">
                   Zoom: {g.zoomMeetingId ?? "—"} · WhatsApp: {g.whatsappGroupLink ? "linked" : "—"}
                 </div>
+                {zoomConfigured && <CreateZoomMeeting group={g} onCreated={state.reload} />}
               </div>
             ))}
           </div>
         </>
       )}
     </Loaded>
+  );
+}
+
+// Only offered when the Zoom API is connected (see docs/deployment.md).
+function CreateZoomMeeting({ group, onCreated }: { group: AdminClassGroup; onCreated: () => void }) {
+  const { busy, error, run } = useAction();
+  async function create() {
+    if (group.zoomMeetingId && !window.confirm(`Replace ${group.name}'s Zoom meeting with a new one? Students will need the new link.`)) return;
+    const done = await run(() => api(`/admin/class-groups/${group.id}/zoom-meeting`, { method: "POST" }));
+    if (done) onCreated();
+  }
+  return (
+    <div className="row">
+      <button className="btn btn-small btn-outline" onClick={create} disabled={busy}>
+        {busy ? "Creating…" : group.zoomMeetingId ? "Create a new Zoom meeting" : "Create Zoom meeting"}
+      </button>
+      <ErrorMessage error={error} />
+    </div>
   );
 }
 

@@ -30,6 +30,17 @@ export function useLoad<T>(load: () => Promise<T>, deps: unknown[]) {
   return { data, error, loading, reload };
 }
 
+// Calls `tick` every `ms` milliseconds while the page is open and visible
+// (e.g. checking whether a class has gone live). Paused in background tabs.
+export function useInterval(tick: () => void, ms: number) {
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") tick();
+    }, ms);
+    return () => clearInterval(id);
+  }, [tick, ms]);
+}
+
 // A private file (screenshot, voice note) as a temporary in-page URL.
 export function usePrivateFileUrl(path: string | null) {
   const [url, setUrl] = useState<string | null>(null);

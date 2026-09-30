@@ -77,7 +77,13 @@ export type Session = {
   scheduledAt: string;
   durationMinutes: number;
   status: "SCHEDULED" | "LIVE" | "COMPLETED" | "CANCELLED";
+  startedAt: string | null;
+  endedAt: string | null;
+  livePlatform: LivePlatform | null;
+  liveNote: string | null;
 };
+
+export type LivePlatform = "ZOOM" | "WHATSAPP";
 
 export type AttendanceStatus = "PRESENT" | "LATE" | "ABSENT" | "EXCUSED";
 
@@ -158,6 +164,7 @@ export type AdminClassGroup = {
   studentCount: number;
   zoomMeetingId: string | null;
   zoomPasscode: string | null;
+  zoomJoinUrl: string | null;
   whatsappGroupLink: string | null;
   isActive: boolean;
   course: { id: string; title: string };

@@ -3,6 +3,7 @@
 // students are placed into them (see enrollments.admin.service.ts).
 import { Prisma } from "../../../generated/prisma/client.ts";
 import { prisma } from "../../lib/prisma.ts";
+import { createRecurringMeeting, zoomConfigured } from "../../lib/zoom.ts";
 import { AppError } from "../../utils/AppError.ts";
 import type { CreateClassGroupInput, UpdateClassGroupInput } from "./classGroups.schemas.ts";
 
@@ -28,6 +29,7 @@ function toAdminGroup(group: GroupWithDetails) {
     studentCount: group._count.enrollments,
     zoomMeetingId: group.zoomMeetingId,
     zoomPasscode: group.zoomPasscode,
+    zoomJoinUrl: group.zoomJoinUrl,
     whatsappGroupLink: group.whatsappGroupLink,
     isActive: group.isActive,
     course: group.course,
@@ -102,6 +104,30 @@ export async function updateClassGroup(id: string, changes: UpdateClassGroupInpu
     );
   }
 
-  const group = await prisma.classGroup.update({ where: { id }, data: changes, include: groupDetails });
+  // A meeting ID typed by hand replaces one created through Zoom, so its saved link no longer applies.
+  const zoomEdited = changes.zoomMeetingId !== undefined || changes.zoomPasscode !== undefined;
+  const group = await prisma.classGroup.update({
+    where: { id },
+    data: { ...changes, ...(zoomEdited ? { zoomJoinUrl: null } : {}) },
+    include: groupDetails,
+  });
   return { classGroup: toAdminGroup(group) };
+}
+
+// Create a Zoom meeting for this group through the Zoom API and save its details.
+// Replaces any meeting ID that was there before.
+export async function createZoomMeeting(id: string) {
+  const current = await prisma.classGroup.findUnique({ where: { id }, include: groupDetails });
+  if (!current) throw groupNotFound();
+  const meeting = await createRecurringMeeting(`${current.course.title} — ${current.name}`);
+  const group = await prisma.classGroup.update({
+    where: { id },
+    data: { zoomMeetingId: meeting.meetingId, zoomPasscode: meeting.passcode, zoomJoinUrl: meeting.joinUrl },
+    include: groupDetails,
+  });
+  return { classGroup: toAdminGroup(group) };
+}
+
+export function zoomStatus() {
+  return { zoomConfigured: zoomConfigured() };
 }

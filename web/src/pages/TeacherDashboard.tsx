@@ -6,9 +6,9 @@ import { Empty, ErrorMessage, Loaded } from "../components/ui.tsx";
 import { VoiceRecorder } from "../components/VoiceRecorder.tsx";
 import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/useAuth.ts";
-import { formatDateTime, greetingName, initials, localInputToIso } from "../lib/format.ts";
+import { formatDateTime, formatTime, greetingName, initials, localInputToIso } from "../lib/format.ts";
 import { useAction, useLoad } from "../lib/hooks.ts";
-import type { AttendanceStatus, RosterStudent, Session, TeacherGroup } from "../lib/types.ts";
+import type { AttendanceStatus, LivePlatform, RosterStudent, Session, TeacherGroup } from "../lib/types.ts";
 
 export function TeacherDashboardPage() {
   const { user } = useAuth();
@@ -52,7 +52,7 @@ function GroupPanel({ groupId }: { groupId: string }) {
         api<GroupDetails>(`/teacher/class-groups/${groupId}`),
         api<{ sessions: (Session & { attendanceMarked: number })[] }>(`/teacher/class-groups/${groupId}/sessions`),
       ]);
-      return { group: details.classGroup, sessions };
+      return { group: details.classGroup, sessions, now: Date.now() };
     },
     [groupId],
   );
@@ -60,9 +60,19 @@ function GroupPanel({ groupId }: { groupId: string }) {
 
   return (
     <Loaded state={state}>
-      {({ group, sessions }) => {
-        const started = sessions.filter((s) => s.status !== "CANCELLED" && new Date(s.scheduledAt).getTime() <= Date.now());
-        const upcoming = sessions.filter((s) => s.status !== "CANCELLED" && new Date(s.scheduledAt).getTime() > Date.now()).reverse();
+      {({ group, sessions, now }) => {
+        const hasStarted = (s: Session) => s.status === "LIVE" || new Date(s.scheduledAt).getTime() <= now;
+        const started = sessions.filter((s) => s.status !== "CANCELLED" && hasStarted(s));
+        const upcoming = sessions.filter((s) => s.status === "SCHEDULED" && !hasStarted(s)).reverse();
+        // The class to start: live now, or scheduled within the hour (or started in the last 4 hours).
+        const liveSession = sessions.find((s) => s.status === "LIVE");
+        const startable = sessions
+          .filter((s) => s.status === "SCHEDULED")
+          .filter((s) => {
+            const t = new Date(s.scheduledAt).getTime();
+            return t - now <= 60 * 60 * 1000 && now - t <= 4 * 60 * 60 * 1000;
+          })
+          .at(-1);
         const selected = sessionId ?? started[0]?.id ?? null;
         return (
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", alignItems: "start" }}>
@@ -79,6 +89,7 @@ function GroupPanel({ groupId }: { groupId: string }) {
                   </div>
                 )}
               </div>
+              <LiveControls key={(liveSession ?? startable)?.id ?? "none"} session={liveSession ?? startable ?? null} onChanged={state.reload} />
               <ScheduleForm groupId={group.id} onScheduled={state.reload} />
             </div>
 
@@ -149,9 +160,65 @@ const MARKS: [AttendanceStatus, string][] = [
   ["EXCUSED", "Excused"],
 ];
 
+// Start the class (students see "Your class is live"), switch to WhatsApp if Zoom
+// fails, and end it when finished.
+function LiveControls({ session, onChanged }: { session: Session | null; onChanged: () => void }) {
+  const [note, setNote] = useState(session?.liveNote ?? "");
+  const { busy, error, run } = useAction();
+
+  if (!session) {
+    return (
+      <div className="card">
+        <h3 className="card-title">Live class</h3>
+        <div className="muted small">You can start a class up to an hour before its scheduled time. Schedule one below.</div>
+      </div>
+    );
+  }
+
+  const act = async (path: string, body?: unknown, method: "POST" | "PATCH" = "POST") => {
+    const done = await run(() => api(`/teacher/sessions/${session.id}/${path}`, { method, body: body ?? {} }));
+    if (done) onChanged();
+  };
+  const other: LivePlatform = session.livePlatform === "WHATSAPP" ? "ZOOM" : "WHATSAPP";
+
+  return (
+    <div className={`card ${session.status === "LIVE" ? "live-banner" : ""}`}>
+      <h3 className="card-title">
+        {session.status === "LIVE" && <span className="live-dot" aria-hidden />}
+        {session.status === "LIVE" ? "Class is live" : "Ready to start"}
+      </h3>
+      <div className="muted">
+        {session.topic ?? "Class"} · {formatDateTime(session.scheduledAt)}
+        {session.status === "LIVE" && session.startedAt && ` · live since ${formatTime(session.startedAt)} on ${session.livePlatform === "WHATSAPP" ? "WhatsApp" : "Zoom"}`}
+      </div>
+      {session.status === "LIVE" ? (
+        <>
+          <div className="field">
+            <label htmlFor="live-note">Note for students (optional)</label>
+            <input id="live-note" className="input" placeholder="e.g. Zoom is down — join the WhatsApp call" value={note} onChange={(e) => setNote(e.target.value)} />
+          </div>
+          <div className="row">
+            <button className="btn btn-small btn-outline" disabled={busy} onClick={() => act("live", { note: note.trim() || null }, "PATCH")}>Save note</button>
+            <button className="btn btn-small btn-outline" disabled={busy} onClick={() => act("live", { platform: other, note: note.trim() || null }, "PATCH")}>
+              Switch to {other === "WHATSAPP" ? "WhatsApp" : "Zoom"}
+            </button>
+            <button className="btn btn-small btn-danger" disabled={busy} onClick={() => act("end")}>End class</button>
+          </div>
+        </>
+      ) : (
+        <div className="row">
+          <button className="btn" disabled={busy} onClick={() => act("start", { platform: "ZOOM" })}>Start class on Zoom</button>
+          <button className="btn btn-outline" disabled={busy} onClick={() => act("start", { platform: "WHATSAPP" })}>Start on WhatsApp</button>
+        </div>
+      )}
+      <ErrorMessage error={error} />
+    </div>
+  );
+}
+
 function AttendancePanel({ sessionId, students }: { sessionId: string; students: RosterStudent[] }) {
   const state = useLoad(
-    () => api<{ students: { studentId: string; status: AttendanceStatus | null }[] }>(`/teacher/sessions/${sessionId}/attendance`),
+    () => api<{ students: { studentId: string; status: AttendanceStatus | null; joinedAt: string | null }[] }>(`/teacher/sessions/${sessionId}/attendance`),
     [sessionId],
   );
   return (
@@ -161,13 +228,19 @@ function AttendancePanel({ sessionId, students }: { sessionId: string; students:
           sessionId={sessionId}
           students={students}
           initialMarks={Object.fromEntries(data.students.flatMap((s) => (s.status ? [[s.studentId, s.status]] : [])))}
+          joined={Object.fromEntries(data.students.flatMap((s) => (s.joinedAt ? [[s.studentId, s.joinedAt]] : [])))}
         />
       )}
     </Loaded>
   );
 }
 
-function AttendanceForm({ sessionId, students, initialMarks }: { sessionId: string; students: RosterStudent[]; initialMarks: Record<string, AttendanceStatus> }) {
+function AttendanceForm({ sessionId, students, initialMarks, joined }: {
+  sessionId: string;
+  students: RosterStudent[];
+  initialMarks: Record<string, AttendanceStatus>;
+  joined: Record<string, string>;
+}) {
   const [marks, setMarks] = useState(initialMarks);
   const [saved, setSaved] = useState(false);
   const { busy, error, run } = useAction();
@@ -187,6 +260,7 @@ function AttendanceForm({ sessionId, students, initialMarks }: { sessionId: stri
           <div className="row">
             <span className="avatar">{initials(s.fullName)}</span>
             <strong>{s.fullName}</strong>
+            {joined[s.studentId] && <span className="pill pill-ok small">Joined {formatTime(joined[s.studentId])}</span>}
           </div>
           <div className="row" role="group" aria-label={`Attendance for ${s.fullName}`}>
             {MARKS.map(([status, label]) => (
@@ -207,6 +281,18 @@ function AttendanceForm({ sessionId, students, initialMarks }: { sessionId: stri
         </div>
       ))}
       <ErrorMessage error={error} />
+      {students.some((s) => joined[s.studentId] && !marks[s.studentId]) && (
+        <button
+          className="btn btn-outline"
+          onClick={() => {
+            const fromJoins = Object.fromEntries(students.filter((s) => joined[s.studentId] && !marks[s.studentId]).map((s) => [s.studentId, "PRESENT" as const]));
+            setMarks({ ...marks, ...fromJoins });
+            setSaved(false);
+          }}
+        >
+          Mark everyone who joined as Present
+        </button>
+      )}
       {students.length > 0 && (
         <button className="btn" onClick={save} disabled={busy || Object.keys(marks).length === 0}>
           {busy ? "Saving…" : saved ? "Attendance saved ✓" : "Save attendance"}

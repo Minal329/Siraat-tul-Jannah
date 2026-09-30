@@ -7,10 +7,10 @@ import { LogoutButton } from "../../components/AccountMenu.tsx";
 import { Button, Card, Chip, Empty, ErrorText, Field, Greeting, Loaded, Muted, Screen, SectionTitle, Title, styles } from "../../components/ui.tsx";
 import { VoiceRecorder } from "../../components/VoiceRecorder.tsx";
 import { api } from "../../lib/api.ts";
-import { formatDateTime, greetingName, parseLocalDateTime } from "../../lib/format.ts";
+import { formatDateTime, formatTime, greetingName, parseLocalDateTime } from "../../lib/format.ts";
 import { useAction, useLoad } from "../../lib/hooks.ts";
 import { colors, fonts } from "../../lib/theme.ts";
-import type { AttendanceStatus, RosterStudent, Session, TeacherGroup } from "../../lib/types.ts";
+import type { AttendanceStatus, LivePlatform, RosterStudent, Session, TeacherGroup } from "../../lib/types.ts";
 import { useAuth } from "../../lib/useAuth.ts";
 
 export default function TeacherHome() {
@@ -50,18 +50,28 @@ function GroupPanel({ groupId }: { groupId: string }) {
       api<{ sessions: Session[] }>(`/teacher/class-groups/${groupId}/sessions`),
     ]);
     const now = Date.now();
-    const live = sessions.filter((s) => s.status !== "CANCELLED");
+    const hasStarted = (s: Session) => s.status === "LIVE" || new Date(s.scheduledAt).getTime() <= now;
+    const notCancelled = sessions.filter((s) => s.status !== "CANCELLED");
+    // The class to start: live now, or scheduled within the hour (or started in the last 4 hours).
+    const startable = sessions
+      .filter((s) => s.status === "SCHEDULED")
+      .filter((s) => {
+        const t = new Date(s.scheduledAt).getTime();
+        return t - now <= 60 * 60 * 1000 && now - t <= 4 * 60 * 60 * 1000;
+      })
+      .at(-1);
     return {
       group: details.classGroup,
-      started: live.filter((s) => new Date(s.scheduledAt).getTime() <= now),
-      upcoming: live.filter((s) => new Date(s.scheduledAt).getTime() > now).reverse(),
+      started: notCancelled.filter(hasStarted),
+      upcoming: sessions.filter((s) => s.status === "SCHEDULED" && !hasStarted(s)).reverse(),
+      current: sessions.find((s) => s.status === "LIVE") ?? startable ?? null,
     };
   }, [groupId]);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   return (
     <Loaded state={state}>
-      {({ group, started, upcoming }) => {
+      {({ group, started, upcoming, current }) => {
         const selected = sessionId ?? started[0]?.id ?? null;
         return (
           <>
@@ -70,6 +80,7 @@ function GroupPanel({ groupId }: { groupId: string }) {
               <Muted>{group.students.length} students · {group.scheduleText ?? "No regular schedule set"}</Muted>
               {upcoming.length > 0 && <Muted small>Upcoming: {upcoming.slice(0, 3).map((s) => `${formatDateTime(s.scheduledAt)}${s.topic ? ` (${s.topic})` : ""}`).join(" · ")}</Muted>}
             </Card>
+            <LiveControls session={current} onChanged={state.reload} />
             <ScheduleForm groupId={group.id} onScheduled={state.reload} />
 
             <SectionTitle>Attendance</SectionTitle>
@@ -122,6 +133,69 @@ function ScheduleForm({ groupId, onScheduled }: { groupId: string; onScheduled: 
   );
 }
 
+// Start the class (students see "Your class is live"), switch to WhatsApp if Zoom
+// fails, and end it when finished.
+// Kept as one component (no `key`) across classes: on the web build, replacing it by key
+// right after its own "End class" button was pressed left the old card on screen.
+function LiveControls({ session, onChanged }: { session: Session | null; onChanged: () => void }) {
+  const [note, setNote] = useState(session?.liveNote ?? "");
+  const [noteFor, setNoteFor] = useState(session?.id);
+  if (session?.id !== noteFor) {
+    // A different class: start from its own note.
+    setNoteFor(session?.id);
+    setNote(session?.liveNote ?? "");
+  }
+  const { busy, error, run } = useAction();
+
+  if (!session) {
+    return (
+      <Card>
+        <Title>Live class</Title>
+        <Muted small>You can start a class up to an hour before its scheduled time. Schedule one below.</Muted>
+      </Card>
+    );
+  }
+
+  const act = async (path: string, body: unknown, method: "POST" | "PATCH" = "POST") => {
+    const done = await run(() => api(`/teacher/sessions/${session.id}/${path}`, { method, body }));
+    if (done) onChanged();
+  };
+  const isLive = session.status === "LIVE";
+  const other: LivePlatform = session.livePlatform === "WHATSAPP" ? "ZOOM" : "WHATSAPP";
+
+  return (
+    <Card style={isLive ? { borderColor: colors.danger, borderWidth: 2, backgroundColor: colors.dangerBg } : undefined}>
+      <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: isLive ? colors.danger : colors.navy }}>{isLive ? "● Class is live" : "Ready to start"}</Text>
+      <Muted>
+        {session.topic ?? "Class"} · {formatDateTime(session.scheduledAt)}
+        {isLive && session.startedAt ? ` · since ${formatTime(session.startedAt)} on ${session.livePlatform === "WHATSAPP" ? "WhatsApp" : "Zoom"}` : ""}
+      </Muted>
+      {isLive ? (
+        <>
+          <Field label="Note for students (optional)" placeholder="e.g. Zoom is down — join the WhatsApp call" value={note} onChangeText={setNote} />
+          <View style={styles.row}>
+            <Button small variant="outline" label="Save note" disabled={busy} onPress={() => act("live", { note: note.trim() || null }, "PATCH")} />
+            <Button
+              small
+              variant="outline"
+              label={`Switch to ${other === "WHATSAPP" ? "WhatsApp" : "Zoom"}`}
+              disabled={busy}
+              onPress={() => act("live", { platform: other, note: note.trim() || null }, "PATCH")}
+            />
+            <Button small variant="danger" label="End class" disabled={busy} onPress={() => act("end", {})} />
+          </View>
+        </>
+      ) : (
+        <View style={styles.row}>
+          <Button label="Start class on Zoom" disabled={busy} onPress={() => act("start", { platform: "ZOOM" })} />
+          <Button variant="outline" label="Start on WhatsApp" disabled={busy} onPress={() => act("start", { platform: "WHATSAPP" })} />
+        </View>
+      )}
+      <ErrorText error={error} />
+    </Card>
+  );
+}
+
 const MARKS: [AttendanceStatus, string][] = [
   ["PRESENT", "Present"],
   ["LATE", "Late"],
@@ -130,7 +204,10 @@ const MARKS: [AttendanceStatus, string][] = [
 ];
 
 function AttendancePanel({ sessionId, students }: { sessionId: string; students: RosterStudent[] }) {
-  const state = useLoad(() => api<{ students: { studentId: string; status: AttendanceStatus | null }[] }>(`/teacher/sessions/${sessionId}/attendance`), [sessionId]);
+  const state = useLoad(
+    () => api<{ students: { studentId: string; status: AttendanceStatus | null; joinedAt: string | null }[] }>(`/teacher/sessions/${sessionId}/attendance`),
+    [sessionId],
+  );
   return (
     <Loaded state={state}>
       {(data) => (
@@ -138,13 +215,19 @@ function AttendancePanel({ sessionId, students }: { sessionId: string; students:
           sessionId={sessionId}
           students={students}
           initialMarks={Object.fromEntries(data.students.flatMap((s) => (s.status ? [[s.studentId, s.status]] : [])))}
+          joined={Object.fromEntries(data.students.flatMap((s) => (s.joinedAt ? [[s.studentId, s.joinedAt]] : [])))}
         />
       )}
     </Loaded>
   );
 }
 
-function AttendanceForm({ sessionId, students, initialMarks }: { sessionId: string; students: RosterStudent[]; initialMarks: Record<string, AttendanceStatus> }) {
+function AttendanceForm({ sessionId, students, initialMarks, joined }: {
+  sessionId: string;
+  students: RosterStudent[];
+  initialMarks: Record<string, AttendanceStatus>;
+  joined: Record<string, string>;
+}) {
   const [marks, setMarks] = useState(initialMarks);
   const [saved, setSaved] = useState(false);
   const { busy, error, run } = useAction();
@@ -162,6 +245,7 @@ function AttendanceForm({ sessionId, students, initialMarks }: { sessionId: stri
       {students.map((s) => (
         <Card key={s.studentId}>
           <Text style={{ fontFamily: fonts.bodyBold, color: colors.text }}>{s.fullName}</Text>
+          {joined[s.studentId] && <Muted small>Joined at {formatTime(joined[s.studentId])}</Muted>}
           <View style={styles.row}>
             {MARKS.map(([status, label]) => (
               <Chip
@@ -179,6 +263,17 @@ function AttendanceForm({ sessionId, students, initialMarks }: { sessionId: stri
         </Card>
       ))}
       <ErrorText error={error} />
+      {students.some((s) => joined[s.studentId] && !marks[s.studentId]) && (
+        <Button
+          variant="outline"
+          label="Mark everyone who joined as Present"
+          onPress={() => {
+            const fromJoins = Object.fromEntries(students.filter((s) => joined[s.studentId] && !marks[s.studentId]).map((s) => [s.studentId, "PRESENT" as const]));
+            setMarks({ ...marks, ...fromJoins });
+            setSaved(false);
+          }}
+        />
+      )}
       {students.length > 0 && (
         <Button label={busy ? "Saving…" : saved ? "Attendance saved ✓" : "Save attendance"} onPress={save} disabled={busy || Object.keys(marks).length === 0} />
       )}

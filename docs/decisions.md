@@ -254,3 +254,23 @@ Studio and Xcode yourself and handle upgrades by hand.
 - **Tooling notes:** this sandbox's proxy blocks the Expo API, so packages were installed with
   `EXPO_OFFLINE=1 npx expo install`. `npm audit` reports moderate advisories in Expo's
   development tools (not in code shipped to phones); they're left until Expo updates them.
+
+## 027 — Live classes: open Zoom/WhatsApp in their own apps; the app tracks the class
+Teachers press **Start class** (up to an hour early) and **End class**. While a class is live,
+students see "Your class is live" (the apps check every 30 seconds) and one **Join** button
+that opens the Zoom app — or WhatsApp, if the teacher switched the class there because Zoom
+failed or connections are weak (with an optional note, e.g. "Zoom is down — join the call").
+- **Join = a hint, not attendance.** Pressing Join is recorded (first time only) and shown to
+  the teacher as "Joined 5:02 pm", with a one-tap "mark everyone who joined as Present". The
+  teacher still decides: someone can join and leave straight away.
+- **Only one live class per group**, enforced by a database index. Starting a new class ends one
+  the teacher forgot to end; a class left "live" for 6 hours stops showing as live.
+- **Zoom meetings can be created automatically** when the academy connects a Zoom
+  "Server-to-Server OAuth" app (`ZOOM_*` settings): one recurring meeting per class group, saved
+  with its link. Without it, admins paste meeting IDs by hand as before.
+- **Not built: Zoom inside our app (Zoom Meeting SDK).** It needs Zoom to approve our app for
+  the Marketplace, a custom native build (it can't run in Expo Go), and adds ~50 MB to the app.
+  Opening the Zoom app gives students the full, familiar Zoom experience and works on weak
+  connections just as well. **Revisit** if the academy needs recording or attendance straight
+  from Zoom's own data (Zoom webhooks could report exact join/leave times).
+

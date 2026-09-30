@@ -1,5 +1,6 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
+import { AppState } from "react-native";
 import type { ApiError } from "./api.ts";
 
 // Loads a screen's data each time the screen comes into view (so going back
@@ -31,6 +32,19 @@ export function useLoad<T>(load: () => Promise<T>, deps: unknown[]) {
   );
 
   return { data, error, loading, reload };
+}
+
+// Calls `tick` every `ms` milliseconds while this screen is showing and the app
+// is open (e.g. checking whether a class has gone live).
+export function useInterval(tick: () => void, ms: number) {
+  useFocusEffect(
+    useCallback(() => {
+      const id = setInterval(() => {
+        if (AppState.currentState === "active") tick();
+      }, ms);
+      return () => clearInterval(id);
+    }, [tick, ms]),
+  );
 }
 
 // Runs an action (a button press) and tracks "busy" and the error to show.

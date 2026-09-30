@@ -127,8 +127,12 @@ function CourseCard({ e, summary, nextClass, latest }: { e: Enrollment; summary?
 
       {e.status === "APPROVED" && (
         <>
-          <Muted small>Next class: {nextClass ? formatDateTime(nextClass.scheduledAt) : e.classGroup?.scheduleText ?? "to be announced"}</Muted>
-          <Button label="Join Live Class" onPress={() => router.push(`/student/live/${e.id}`)} />
+          {nextClass?.status === "LIVE" ? (
+            <Text style={{ fontFamily: fonts.bodyBold, color: colors.danger }}>● Live now</Text>
+          ) : (
+            <Muted small>Next class: {nextClass ? formatDateTime(nextClass.scheduledAt) : e.classGroup?.scheduleText ?? "to be announced"}</Muted>
+          )}
+          <Button label={nextClass?.status === "LIVE" ? "Join Live Class now" : "Join Live Class"} onPress={() => router.push(`/student/live/${e.id}`)} />
         </>
       )}
       {e.certificate && <Button variant="gold" label="View Certificate" onPress={() => router.push(`/student/certificate/${e.certificate!.certificateNumber}`)} />}

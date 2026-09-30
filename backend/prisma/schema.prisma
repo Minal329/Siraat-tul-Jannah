@@ -55,6 +55,13 @@ enum ClassSessionStatus {
   CANCELLED
 }
 
+// Where a live class is happening right now. WHATSAPP is the fallback when
+// Zoom fails or connections are too weak for video.
+enum LivePlatform {
+  ZOOM
+  WHATSAPP
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
@@ -123,6 +130,7 @@ model Student {
   enrollments Enrollment[]
   attendance  Attendance[]
   feedback    Feedback[]
+  joins       SessionJoin[]
 
   @@map("students")
 }
@@ -199,6 +207,7 @@ model ClassGroup {
   maxStudents       Int?      @map("max_students")
   zoomMeetingId     String?   @map("zoom_meeting_id")
   zoomPasscode      String?   @map("zoom_passcode")
+  zoomJoinUrl       String?   @map("zoom_join_url") // set when the meeting was created through the Zoom API
   whatsappGroupLink String?   @map("whatsapp_group_link") // low-bandwidth fallback
   isActive          Boolean   @default(true) @map("is_active")
   createdAt         DateTime  @default(now()) @map("created_at")
@@ -297,11 +306,17 @@ model ClassSession {
   scheduledAt     DateTime           @map("scheduled_at")
   durationMinutes Int                @default(60) @map("duration_minutes")
   status          ClassSessionStatus @default(SCHEDULED)
+  // Set while the class is running: the teacher pressed "Start class".
+  startedAt       DateTime?          @map("started_at")
+  endedAt         DateTime?          @map("ended_at")
+  livePlatform    LivePlatform?      @map("live_platform")
+  liveNote        String?            @map("live_note") // e.g. "Zoom is down — join the WhatsApp call"
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
 
-  classGroup ClassGroup   @relation(fields: [classGroupId], references: [id], onDelete: Cascade)
+  classGroup ClassGroup    @relation(fields: [classGroupId], references: [id], onDelete: Cascade)
   attendance Attendance[]
+  joins      SessionJoin[]
 
   @@index([classGroupId, scheduledAt])
   @@map("class_sessions")
@@ -324,6 +339,24 @@ model Attendance {
   @@unique([classSessionId, studentId]) // one mark per student per class
   @@index([studentId])
   @@map("attendance")
+}
+
+// A student pressed "Join" during a live class. Only the first join is kept.
+// Teachers see it as a hint when marking attendance — it isn't attendance itself
+// (someone can join and leave straight away).
+model SessionJoin {
+  id             String       @id @default(uuid()) @db.Uuid
+  classSessionId String       @map("class_session_id") @db.Uuid
+  studentId      String       @map("student_id") @db.Uuid
+  platform       LivePlatform
+  joinedAt       DateTime     @default(now()) @map("joined_at")
+
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classSessionId, studentId])
+  @@index([studentId])
+  @@map("session_joins")
 }
 
 // ─────────────────────── Feedback, certificates, lectures ────────────
