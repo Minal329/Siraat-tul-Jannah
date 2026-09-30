@@ -47,6 +47,10 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Auth: `requireAuth` then `requireRole("ADMIN")` from `middleware/requireAuth.ts`; handlers read
   `req.auth.userId` / `req.auth.role`. Access JWT 15 min + rotating refresh token (hashed in
   `refresh_tokens`). Public signup only creates STUDENTs. Never return `passwordHash` — use `toPublicUser`.
+- Create accounts of any role with `createUserWithProfile` (`modules/users/users.service.ts`);
+  pass a transaction client as the 2nd argument when inside `prisma.$transaction`.
+- One-off command-line tools live in `src/scripts/` (seed, create-admin) and export their core
+  function so tests can call it.
 - Errors: `throw new AppError(status, "CODE", "message")`; `middleware/errorHandler.ts`
   turns every error into `{ error: { code, message, details? } }`. Success = `{ data }`.
 - Local imports use the `.ts` extension (ESM + `rewriteRelativeImportExtensions`).
@@ -60,6 +64,10 @@ Logo: open book + pen in a gold sunburst circle badge.
 - `npm run db:migrate` — create/apply a migration after editing the schema, **then**
 - `npm run db:generate` — regenerate the Prisma client (Prisma 7 no longer does this on migrate)
 - `npm run db:studio` — browse the database in a GUI
+- `npm run db:seed` — fill an EMPTY dev database with [SAMPLE] data (all passwords `password123`;
+  logins printed). `npm run db:reset` wipes the dev DB, re-migrates and re-seeds. Never in production.
+- `npm run create-admin -- --email x@y.com --name "Full Name"` — real admin account (production-safe).
+  Password from `ADMIN_PASSWORD` env var, else generated and printed once. Never pass passwords as flags.
 - Local DB URL lives in `backend/.env` (copy from `.env.example`; never commit `.env`).
 
 ## Conventions

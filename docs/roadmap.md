@@ -7,7 +7,7 @@ top of the one before, so it can be tested before moving on.
 - [x] **2. Database schema** — Prisma schema for every feature + first migration
 - [x] **3. API skeleton** — Express app, folder structure, error handling, health check
 - [x] **4. Auth** — signup/login, bcrypt password hashing, JWT, role-based guards
-- [ ] **5. Seed data** — sample admin, teachers, courses, students for development
+- [x] **5. Seed data** — sample admin, teachers, courses, students for development
 - [ ] **6. Courses & enrollment API** — catalog, enroll, one-active-enrollment rule
 - [ ] **7. Payments API** — proof upload (file storage), admin-editable accounts, verification
 - [ ] **8. Admin workflow** — approve/reject, assign class group
