@@ -17,6 +17,8 @@ const envSchema = z.object({
   // Folder for uploaded files (payment screenshots etc.), relative to backend/.
   // Must be kept private and backed up — it holds students' financial details.
   UPLOAD_DIR: z.string().min(1).default("uploads"),
+  // The website's address, printed on certificates as the "verify this certificate" link.
+  PUBLIC_WEB_URL: z.url().default("http://localhost:5173"),
   CORS_ORIGINS: z
     .string()
     .default("http://localhost:5173")

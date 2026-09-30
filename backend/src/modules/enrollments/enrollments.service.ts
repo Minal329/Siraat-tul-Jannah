@@ -7,6 +7,7 @@
 import { Prisma } from "../../../generated/prisma/client.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { AppError } from "../../utils/AppError.ts";
+import { downloadUrl, verifyUrl } from "../certificates/certificates.service.ts";
 import { toPaymentSummary } from "../payments/payments.service.ts";
 import { getStudentId } from "../users/users.service.ts";
 
@@ -24,8 +25,15 @@ const enrollmentDetails = {
 } as const;
 type EnrollmentWithDetails = Prisma.EnrollmentGetPayload<{ include: typeof enrollmentDetails }>;
 
+// "123 456 7890" → https://zoom.us/j/1234567890 (opens the Zoom app or browser).
+function zoomJoinUrl(meetingId: string | null) {
+  const digits = meetingId?.replace(/\D/g, "");
+  return digits ? `https://zoom.us/j/${digits}` : null;
+}
+
 function toStudentEnrollment(enrollment: EnrollmentWithDetails) {
   const group = enrollment.classGroup;
+  const isCurrent = enrollment.status === "APPROVED";
   return {
     id: enrollment.id,
     status: enrollment.status,
@@ -42,11 +50,20 @@ function toStudentEnrollment(enrollment: EnrollmentWithDetails) {
           startDate: group.startDate,
           endDate: group.endDate,
           teacherName: group.teacher?.fullName ?? null,
-          // Only students currently in the group get the invite link.
-          whatsappGroupLink: enrollment.status === "APPROVED" ? group.whatsappGroupLink : null,
+          // Only students currently in the group get the joining details.
+          whatsappGroupLink: isCurrent ? group.whatsappGroupLink : null,
+          zoomMeetingId: isCurrent ? group.zoomMeetingId : null,
+          zoomPasscode: isCurrent ? group.zoomPasscode : null,
+          zoomJoinUrl: isCurrent ? zoomJoinUrl(group.zoomMeetingId) : null,
         }
       : null,
-    certificate: enrollment.certificate,
+    certificate: enrollment.certificate
+      ? {
+          ...enrollment.certificate,
+          downloadUrl: downloadUrl(enrollment.certificate.certificateNumber),
+          verifyUrl: verifyUrl(enrollment.certificate.certificateNumber),
+        }
+      : null,
     payments: enrollment.payments.map(toPaymentSummary),
   };
 }

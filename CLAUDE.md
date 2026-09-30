@@ -7,8 +7,8 @@ standing brief: keep it short, true, and up to date.
 Online Quran academy LMS for **Siraat tul Jannah** (founder: Hafiza Aqsa Jamil).
 Replaces WhatsApp-based class coordination. One codebase family:
 - `backend/` — Node.js + Express 5 REST API in TypeScript, PostgreSQL via Prisma 7
-- `web/` — React.js desktop website (not scaffolded yet)
-- `mobile/` — React Native (Expo) app (not scaffolded yet)
+- `web/` — React 19 + Vite + TypeScript website (see `web/README.md` for screens and commands)
+- `mobile/` — Expo (React Native) app for students and teachers (see `mobile/README.md`)
 - `docs/` — decisions log and build roadmap
 
 Clickable prototype (source of truth for screens/UX):
@@ -34,7 +34,7 @@ The project owner is a coding beginner. When working here:
 ## Brand
 Navy `#0B2A4A` (primary) · Navy 2 `#1B3A63` · Gold `#B48B48` (accent) ·
 Ivory `#F5F0E4` (background) · Text `#14213A`.
-Fonts: **Amiri** (headings/display) + **Work Sans** (body), via Google Fonts.
+Fonts: **Amiri** (headings/display) + **Work Sans** (body), bundled via Fontsource (not the Google Fonts CDN).
 Logo: open book + pen in a gold sunburst circle badge.
 
 ## Backend layout (`backend/src/`)
@@ -56,7 +56,12 @@ Logo: open book + pen in a gold sunburst circle badge.
   `/auth/change-password`, `/teacher/*` (class groups, sessions, attendance — teachers see only
   their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`,
   `/teacher/feedback` (send text/voice, list sent), `/feedback/mine`, `/feedback/:id/read`,
-  `/feedback/:id/voice` (student, its teacher, or admin).
+  `/feedback/:id/voice` (student, its teacher, or admin), `/lectures` (students), `/teacher/lectures`,
+  `/admin/certificates` (issue), `/certificates/verify/:number` (public), `/certificates/:number/pdf`.
+- Lecture videos are links to a video service (YouTube unlisted / Vimeo / Bunny) — never uploaded to
+  our server. `toEmbedUrl` turns YouTube/Vimeo links into in-app player URLs.
+- Certificates: numbers `STJ-<year>-<00001>-<4 random chars>`; the running number is assigned under a
+  Postgres advisory lock. PDFs are drawn on demand by `lib/certificatePdf.ts` (pdfkit + Fontsource fonts).
   Staff-only endpoints go under `/admin/...`, the teacher's area under `/teacher/...`.
 - Teacher ownership: `loadGroupFor(auth, groupId)` in `sessions.service.ts` — another teacher's group
   answers 404. Reuse it for anything a teacher does to "their" class.
@@ -83,6 +88,26 @@ Logo: open book + pen in a gold sunburst circle badge.
   turns every error into `{ error: { code, message, details? } }`. Success = `{ data }`.
 - Local imports use the `.ts` extension (ESM + `rewriteRelativeImportExtensions`).
 
+## Web layout (`web/src/`)
+- `lib/api.ts` — every API call goes through `api()` / `apiFile()`: adds the token, renews an expired login
+  once (single-flight), turns errors into `ApiError`. Access token in memory; refresh token in localStorage.
+- `lib/useAuth.ts` (`useAuth`, `homeFor`) + `lib/auth.tsx` (`AuthProvider`); `lib/hooks.ts` (`useLoad`,
+  `useAction`, `usePrivateFileUrl`); `lib/types.ts` mirrors API responses; `lib/format.ts` money/dates.
+- `pages/*` one file per screen; `components/ui.tsx` shared pieces (`Loaded`, `Modal`, `PrivateImage`…).
+- Private files (screenshots, voice notes, PDFs) are fetched with the token (`apiFile`), never linked.
+- Styling: plain CSS in `styles.css`, brand colours as CSS variables; fonts bundled via Fontsource.
+- Must work at phone width (390px) with no sideways scrolling.
+- Commands (inside `web/`): `npm run dev`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
+
+## Mobile layout (`mobile/src/`)
+- Expo SDK 57 + expo-router: every file in `app/` is a screen (`app/student/pay/[id].tsx` → `/student/pay/<id>`).
+- `lib/api.ts` follows the same rules as the web client; the refresh token lives in the phone's secure
+  storage (expo-secure-store; localStorage only in the web preview). `lib/types.ts` / `lib/format.ts` are
+  copies of the web ones — change both.
+- Admins are sent to the website (`app/admin-on-web.tsx`); the app covers students and teachers.
+- Install packages with `EXPO_OFFLINE=1 npx expo install <pkg>` (picks SDK-matching versions).
+- Commands (inside `mobile/`): `npm start`, `npm test` (jest-expo), `npm run typecheck`.
+
 ## Commands (run inside `backend/`)
 - `npm run dev` — start the API with auto-restart on http://localhost:4000/api/v1
 - `npm test` — run tests (vitest + supertest). Needs Postgres running: DB tests use `siraat_test`
@@ -103,6 +128,7 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Never commit secrets. New env vars go in `.env.example` with a placeholder.
 - Schema changes always go through a Prisma migration — never edit the DB by hand.
 - Every new endpoint gets tests in `backend/tests/`; run `npm test` and `npm run typecheck` before committing.
+- Web CI (`.github/workflows/web-ci.yml`): lint → typecheck → tests → build.
 - CI (`.github/workflows/backend-ci.yml`) runs on every PR: install → prisma generate →
   typecheck → tests → build → migrate a fresh DB → fail if schema.prisma has no matching migration.
   A PR is only ready to merge when CI is green.

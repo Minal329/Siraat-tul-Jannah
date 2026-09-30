@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Siraat tul Jannah",
+    "slug": "siraat-tul-jannah",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "siraattuljannah",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.siraattuljannah.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Teachers record voice feedback on students' recitation.",
+        "NSPhotoLibraryUsageDescription": "Choose a screenshot of your fee payment to upload."
+      }
+    },
+    "android": {
+      "package": "com.siraattuljannah.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0B2A4A"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Teachers record voice feedback on students' recitation."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a screenshot of your fee payment to upload."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0B2A4A",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

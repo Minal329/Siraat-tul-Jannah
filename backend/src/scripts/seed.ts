@@ -116,7 +116,7 @@ export async function seedDevelopmentData({ nodeEnv = env.NODE_ENV } = {}) {
         },
       });
       await tx.certificate.create({
-        data: { enrollmentId: hiraQaida.id, certificateNumber: "STJ-SAMPLE-00001", issuedById: admin.id, issuedAt: daysFromNow(-35) },
+        data: { enrollmentId: hiraQaida.id, certificateNumber: "STJ-2026-00001-SAMP", issuedById: admin.id, issuedAt: daysFromNow(-35) },
       });
       await tx.enrollment.create({
         data: {

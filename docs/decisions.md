@@ -195,3 +195,62 @@ which iPhone and Android audio players need to seek.
 The recording's length is sent by the app; the server doesn't decode audio to measure it.
 **Alternative:** send voice notes through WhatsApp as today — familiar, but nothing is kept
 with the student's record and the academy can't see it.
+
+## 023 — Lecture videos are links, not uploads
+Recorded lectures point at videos hosted on a video service (YouTube unlisted is free;
+Vimeo or Bunny Stream add privacy controls). They handle slow connections, phone playback
+and bandwidth far better than our server could, and cost us no storage. For YouTube and
+Vimeo links the API also returns an embed URL so the apps can play the video in place.
+A lecture is shared with a whole course or just one class group, and is a draft until published.
+**Alternative:** upload video files to our own server like screenshots — full control, but
+videos are huge, so storage and bandwidth get expensive and playback suffers on weak connections.
+
+## 024 — Certificates: numbered, verifiable, drawn on demand
+Admins issue a certificate for a COMPLETED enrollment. Numbers look like `STJ-2026-00042-K7PX`:
+a running number people can read out, plus four random characters so nobody can collect every
+graduate's name by trying 1, 2, 3… on the public verify page (which is also rate-limited).
+The running number is assigned while holding a Postgres advisory lock, so simultaneous issues
+never share a number (a test showed duplicates without it). The PDF is drawn fresh on each
+download (pdfkit, brand fonts via Fontsource), so fixing a misspelled name needs no regeneration.
+The badge is drawn as a simple vector placeholder until the real logo file is added.
+
+## 025 — Website: React + Vite, plain CSS, bundled fonts
+The website is React 19 + TypeScript, built with Vite (the standard React setup today), with
+React Router for addresses. Styling is plain CSS with the brand colours as variables — no UI
+framework, because the prototype's look is simple and one fewer library is one fewer thing to learn.
+**Alternative:** Next.js — adds server rendering (better search-engine visibility for the public
+catalog) but more concepts; worth revisiting if the catalog must rank on Google.
+- **Login storage:** the 15-minute access token lives only in memory; the 30-day refresh token is in
+  localStorage so people stay logged in. Any script injected into the page could read it, so this is
+  a known trade-off; moving it to an httpOnly cookie is on the list for the security step (15).
+  After a reload the site renews the login *before* its first request, saving a wasted round trip
+  on every page load on slow connections.
+- **Fonts:** Amiri and Work Sans are bundled with the site (Fontsource) instead of loaded from Google
+  Fonts: no dependency on Google being reachable, one fewer outside server, and students' page
+  views aren't shared with a third party.
+- Prototype features not built because the backend doesn't have them yet: course ratings,
+  "Apply Leave", "Mark for Repeat Lesson", course photos upload, and a role picker at sign-up
+  (sign-up only creates students by design — decision 012).
+
+## 026 — Mobile app: Expo for students and teachers; admins use the website
+The app is built with Expo (SDK 57) and expo-router, so one TypeScript codebase runs on Android
+and iOS, and it can be tested on a real phone with the free Expo Go app before any store release.
+**Alternative:** plain React Native CLI — more control over native code, but you'd set up Android
+Studio and Xcode yourself and handle upgrades by hand.
+- **Scope:** students (catalog, enroll & pay, dashboard, live class, recordings, feedback,
+  certificate) and teachers (schedule, attendance, text + voice feedback). Admins get a screen
+  pointing them to the website, which has room for the review tables.
+- **Login storage:** the refresh token is kept in the phone's secure storage (iOS Keychain /
+  Android Keystore via expo-secure-store), which is safer than the website's localStorage.
+- **Phone features:** payment screenshots come from the photo gallery (expo-image-picker), voice
+  notes are recorded as `.m4a` (expo-audio), Zoom/WhatsApp links open in their own apps, and
+  recordings open in an in-app browser.
+- **Scheduling a class** uses typed date (YYYY-MM-DD) and time (HH:MM) fields for now; a native
+  date picker can replace them later without changing the API.
+- **Shared code:** `lib/types.ts` and `lib/format.ts` are copied from the website rather than put
+  in a shared package — simpler tooling for now, at the cost of changing both copies.
+- **Certificate PDF** download stays on the website; the app shows the certificate and shares the
+  public verify link.
+- **Tooling notes:** this sandbox's proxy blocks the Expo API, so packages were installed with
+  `EXPO_OFFLINE=1 npx expo install`. `npm audit` reports moderate advisories in Expo's
+  development tools (not in code shipped to phones); they're left until Expo updates them.

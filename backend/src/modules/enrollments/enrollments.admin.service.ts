@@ -19,6 +19,7 @@ const adminDetails = {
   course: { select: { id: true, title: true, feePkr: true } },
   classGroup: { select: { id: true, name: true } },
   payments: { orderBy: { createdAt: "desc" } },
+  certificate: { select: { certificateNumber: true, issuedAt: true } },
 } as const;
 type AdminEnrollment = Prisma.EnrollmentGetPayload<{ include: typeof adminDetails }>;
 
@@ -38,6 +39,7 @@ function toAdminEnrollment(enrollment: AdminEnrollment) {
     },
     course: enrollment.course,
     classGroup: enrollment.classGroup,
+    certificate: enrollment.certificate,
     hasVerifiedPayment: enrollment.payments.some((p) => p.status === "VERIFIED"),
     payments: enrollment.payments.map(toPaymentSummary),
   };
