@@ -15,6 +15,6 @@ top of the one before, so it can be tested before moving on.
 - [x] **10. Feedback API** — text + voice notes (audio upload)
 - [x] **11. Recorded lectures & certificates API** (PDF generation)
 - [x] **12. Web app** — React + brand theme, all 9 prototype screens wired to the API
-- [ ] **13. Mobile app** — Expo, same screens, shared API client
+- [x] **13. Mobile app** — Expo, same screens, shared API client
 - [ ] **14. Live classes** — Zoom SDK + WhatsApp fallback links
 - [ ] **15. Testing, security review, deployment**

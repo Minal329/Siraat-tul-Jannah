@@ -231,3 +231,26 @@ catalog) but more concepts; worth revisiting if the catalog must rank on Google.
 - Prototype features not built because the backend doesn't have them yet: course ratings,
   "Apply Leave", "Mark for Repeat Lesson", course photos upload, and a role picker at sign-up
   (sign-up only creates students by design — decision 012).
+
+## 026 — Mobile app: Expo for students and teachers; admins use the website
+The app is built with Expo (SDK 57) and expo-router, so one TypeScript codebase runs on Android
+and iOS, and it can be tested on a real phone with the free Expo Go app before any store release.
+**Alternative:** plain React Native CLI — more control over native code, but you'd set up Android
+Studio and Xcode yourself and handle upgrades by hand.
+- **Scope:** students (catalog, enroll & pay, dashboard, live class, recordings, feedback,
+  certificate) and teachers (schedule, attendance, text + voice feedback). Admins get a screen
+  pointing them to the website, which has room for the review tables.
+- **Login storage:** the refresh token is kept in the phone's secure storage (iOS Keychain /
+  Android Keystore via expo-secure-store), which is safer than the website's localStorage.
+- **Phone features:** payment screenshots come from the photo gallery (expo-image-picker), voice
+  notes are recorded as `.m4a` (expo-audio), Zoom/WhatsApp links open in their own apps, and
+  recordings open in an in-app browser.
+- **Scheduling a class** uses typed date (YYYY-MM-DD) and time (HH:MM) fields for now; a native
+  date picker can replace them later without changing the API.
+- **Shared code:** `lib/types.ts` and `lib/format.ts` are copied from the website rather than put
+  in a shared package — simpler tooling for now, at the cost of changing both copies.
+- **Certificate PDF** download stays on the website; the app shows the certificate and shares the
+  public verify link.
+- **Tooling notes:** this sandbox's proxy blocks the Expo API, so packages were installed with
+  `EXPO_OFFLINE=1 npx expo install`. `npm audit` reports moderate advisories in Expo's
+  development tools (not in code shipped to phones); they're left until Expo updates them.

@@ -8,7 +8,7 @@ Online Quran academy LMS for **Siraat tul Jannah** (founder: Hafiza Aqsa Jamil).
 Replaces WhatsApp-based class coordination. One codebase family:
 - `backend/` — Node.js + Express 5 REST API in TypeScript, PostgreSQL via Prisma 7
 - `web/` — React 19 + Vite + TypeScript website (see `web/README.md` for screens and commands)
-- `mobile/` — React Native (Expo) app (not scaffolded yet)
+- `mobile/` — Expo (React Native) app for students and teachers (see `mobile/README.md`)
 - `docs/` — decisions log and build roadmap
 
 Clickable prototype (source of truth for screens/UX):
@@ -98,6 +98,15 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Styling: plain CSS in `styles.css`, brand colours as CSS variables; fonts bundled via Fontsource.
 - Must work at phone width (390px) with no sideways scrolling.
 - Commands (inside `web/`): `npm run dev`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
+
+## Mobile layout (`mobile/src/`)
+- Expo SDK 57 + expo-router: every file in `app/` is a screen (`app/student/pay/[id].tsx` → `/student/pay/<id>`).
+- `lib/api.ts` follows the same rules as the web client; the refresh token lives in the phone's secure
+  storage (expo-secure-store; localStorage only in the web preview). `lib/types.ts` / `lib/format.ts` are
+  copies of the web ones — change both.
+- Admins are sent to the website (`app/admin-on-web.tsx`); the app covers students and teachers.
+- Install packages with `EXPO_OFFLINE=1 npx expo install <pkg>` (picks SDK-matching versions).
+- Commands (inside `mobile/`): `npm start`, `npm test` (jest-expo), `npm run typecheck`.
 
 ## Commands (run inside `backend/`)
 - `npm run dev` — start the API with auto-restart on http://localhost:4000/api/v1
