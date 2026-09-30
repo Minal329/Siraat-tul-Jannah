@@ -56,7 +56,12 @@ Logo: open book + pen in a gold sunburst circle badge.
   `/auth/change-password`, `/teacher/*` (class groups, sessions, attendance — teachers see only
   their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`,
   `/teacher/feedback` (send text/voice, list sent), `/feedback/mine`, `/feedback/:id/read`,
-  `/feedback/:id/voice` (student, its teacher, or admin).
+  `/feedback/:id/voice` (student, its teacher, or admin), `/lectures` (students), `/teacher/lectures`,
+  `/admin/certificates` (issue), `/certificates/verify/:number` (public), `/certificates/:number/pdf`.
+- Lecture videos are links to a video service (YouTube unlisted / Vimeo / Bunny) — never uploaded to
+  our server. `toEmbedUrl` turns YouTube/Vimeo links into in-app player URLs.
+- Certificates: numbers `STJ-<year>-<00001>-<4 random chars>`; the running number is assigned under a
+  Postgres advisory lock. PDFs are drawn on demand by `lib/certificatePdf.ts` (pdfkit + Fontsource fonts).
   Staff-only endpoints go under `/admin/...`, the teacher's area under `/teacher/...`.
 - Teacher ownership: `loadGroupFor(auth, groupId)` in `sessions.service.ts` — another teacher's group
   answers 404. Reuse it for anything a teacher does to "their" class.

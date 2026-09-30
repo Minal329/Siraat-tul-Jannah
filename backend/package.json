@@ -21,6 +21,8 @@
     "create-admin": "tsx src/scripts/create-admin.ts"
   },
   "dependencies": {
+    "@fontsource/amiri": "5.3.0",
+    "@fontsource/work-sans": "5.3.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "bcrypt": "6.0.0",
@@ -32,6 +34,7 @@
     "jsonwebtoken": "9.0.3",
     "morgan": "1.12.1",
     "multer": "2.4.0",
+    "pdfkit": "0.20.2",
     "pg": "8.23.0",
     "zod": "4.6.5"
   },
@@ -43,6 +46,7 @@
     "@types/morgan": "1.9.10",
     "@types/multer": "2.3.0",
     "@types/node": "22.20.4",
+    "@types/pdfkit": "0.17.6",
     "@types/pg": "8.23.1",
     "@types/supertest": "7.2.1",
     "prisma": "7.10.0",

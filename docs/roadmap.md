@@ -13,7 +13,7 @@ top of the one before, so it can be tested before moving on.
 - [x] **8. Admin workflow** — approve/reject, assign class group
 - [x] **9. Class sessions & attendance API**
 - [x] **10. Feedback API** — text + voice notes (audio upload)
-- [ ] **11. Recorded lectures & certificates API** (PDF generation)
+- [x] **11. Recorded lectures & certificates API** (PDF generation)
 - [ ] **12. Web app** — React + brand theme, all 9 prototype screens wired to the API
 - [ ] **13. Mobile app** — Expo, same screens, shared API client
 - [ ] **14. Live classes** — Zoom SDK + WhatsApp fallback links

@@ -195,3 +195,21 @@ which iPhone and Android audio players need to seek.
 The recording's length is sent by the app; the server doesn't decode audio to measure it.
 **Alternative:** send voice notes through WhatsApp as today — familiar, but nothing is kept
 with the student's record and the academy can't see it.
+
+## 023 — Lecture videos are links, not uploads
+Recorded lectures point at videos hosted on a video service (YouTube unlisted is free;
+Vimeo or Bunny Stream add privacy controls). They handle slow connections, phone playback
+and bandwidth far better than our server could, and cost us no storage. For YouTube and
+Vimeo links the API also returns an embed URL so the apps can play the video in place.
+A lecture is shared with a whole course or just one class group, and is a draft until published.
+**Alternative:** upload video files to our own server like screenshots — full control, but
+videos are huge, so storage and bandwidth get expensive and playback suffers on weak connections.
+
+## 024 — Certificates: numbered, verifiable, drawn on demand
+Admins issue a certificate for a COMPLETED enrollment. Numbers look like `STJ-2026-00042-K7PX`:
+a running number people can read out, plus four random characters so nobody can collect every
+graduate's name by trying 1, 2, 3… on the public verify page (which is also rate-limited).
+The running number is assigned while holding a Postgres advisory lock, so simultaneous issues
+never share a number (a test showed duplicates without it). The PDF is drawn fresh on each
+download (pdfkit, brand fonts via Fontsource), so fixing a misspelled name needs no regeneration.
+The badge is drawn as a simple vector placeholder until the real logo file is added.
