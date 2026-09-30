@@ -54,7 +54,9 @@ Logo: open book + pen in a gold sunburst circle badge.
   `/admin/courses`, `/admin/class-groups`, `/admin/enrollments` (approve/reject/move/complete),
   `/admin/payment-accounts`, `/admin/payments`, `/admin/teachers`, `/admin/users/:id/status`,
   `/auth/change-password`, `/teacher/*` (class groups, sessions, attendance — teachers see only
-  their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`.
+  their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`,
+  `/teacher/feedback` (send text/voice, list sent), `/feedback/mine`, `/feedback/:id/read`,
+  `/feedback/:id/voice` (student, its teacher, or admin).
   Staff-only endpoints go under `/admin/...`, the teacher's area under `/teacher/...`.
 - Teacher ownership: `loadGroupFor(auth, groupId)` in `sessions.service.ts` — another teacher's group
   answers 404. Reuse it for anything a teacher does to "their" class.
@@ -69,7 +71,8 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Uploads (`middleware/upload.ts`): `imageUpload("field")` + `requireImage(req.file)` (5 MB) or
   `audioUpload("field")` + `requireAudio(file)` (10 MB) — memory only, type checked from the file's bytes. Save with `saveFile` / read with `locateFile` (`lib/storage.ts`,
   folder `UPLOAD_DIR`). Never serve uploads statically: stream them from a route that checks who is asking.
-  `payments.proof_image_url` holds a storage key (e.g. `payments/<uuid>.png`), not a public URL.
+  `payments.proof_image_url` and `feedback.voice_url` hold storage keys (e.g. `payments/<uuid>.png`),
+  not public URLs. Stream files with `res.sendFile` (supports Range, needed by phone audio players).
 - IDs in URLs: `parseId(req.params.id, "Course")` (`utils/parseId.ts`) → 404 for non-UUIDs.
 - Public responses are built field by field (`toPublicCourse` etc.): never expose Zoom passcodes,
   WhatsApp group links or other students' data to people who shouldn't see them.

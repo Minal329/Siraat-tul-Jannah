@@ -25,7 +25,7 @@ async function teacherScope(auth: Auth) {
   return { teacherId: await getTeacherId(auth.userId), isAdmin: false };
 }
 
-async function loadGroupFor(auth: Auth, classGroupId: string) {
+export async function loadGroupFor(auth: Auth, classGroupId: string) {
   const scope = await teacherScope(auth);
   const group = await prisma.classGroup.findUnique({
     where: { id: classGroupId },
