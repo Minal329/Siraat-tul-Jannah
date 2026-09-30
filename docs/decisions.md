@@ -63,3 +63,11 @@ more tutorials and answers online, which matters more for us right now.
 ## 010 — API is versioned under /api/v1
 Phones keep running old app versions for months. When a breaking change is
 needed, it goes under `/api/v2` while `/api/v1` keeps serving older apps.
+
+## 011 — GitHub Actions for CI
+Every pull request (and every push to `main`) automatically installs the backend,
+type-checks, runs the tests, builds, applies all migrations to a brand-new Postgres
+database, and fails if `schema.prisma` was edited without a matching migration.
+The result shows as ✅ or ❌ on the PR, so nothing depends on remembering to run checks.
+**Alternative:** other hosted CI services (CircleCI, GitLab CI) work similarly, but
+GitHub Actions is built into GitHub and free for this size of project.

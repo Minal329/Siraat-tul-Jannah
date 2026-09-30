@@ -1,0 +1,75 @@
+# Backend CI — runs automatically on every pull request and every push to main.
+# A red ❌ on a PR means one of these steps failed; click "Details" to see which.
+name: Backend CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# If you push again while a run is in progress, cancel the old run.
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: backend
+
+    # A throwaway PostgreSQL database that exists only for this run.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: siraat
+          POSTGRES_PASSWORD: siraat_ci
+          POSTGRES_DB: siraat_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U siraat"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://siraat:siraat_ci@localhost:5432/siraat_ci?schema=public
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Apply migrations to a fresh database
+        run: npx prisma migrate deploy
+
+      # Fails if schema.prisma was changed without creating a migration.
+      - name: Check schema and migrations are in sync
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
