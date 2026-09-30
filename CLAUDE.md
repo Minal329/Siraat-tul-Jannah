@@ -60,4 +60,7 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Never commit secrets. New env vars go in `.env.example` with a placeholder.
 - Schema changes always go through a Prisma migration — never edit the DB by hand.
 - Every new endpoint gets tests in `backend/tests/`; run `npm test` and `npm run typecheck` before committing.
+- CI (`.github/workflows/backend-ci.yml`) runs on every PR: install → prisma generate →
+  typecheck → tests → build → migrate a fresh DB → fail if schema.prisma has no matching migration.
+  A PR is only ready to merge when CI is green.
 - Record significant decisions in `docs/decisions.md`.
