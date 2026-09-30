@@ -42,3 +42,24 @@ Floats lose precision (0.1 + 0.2 ≠ 0.3). Fees are whole PKR, so `Int` is exact
 `backend/`, `web/`, `mobile/` each have their own `package.json`. Simpler to
 understand, and Expo can be picky with workspaces. We can add workspaces later
 if we start sharing code (e.g. a `shared/` types package).
+
+## 008 — TypeScript for the backend
+Prisma 7 generates its database client as TypeScript, and TypeScript catches
+mistakes (a typo'd field name, a missing argument) before the code runs.
+`tsx` runs it directly in development; `tsc` compiles to plain JavaScript in
+`dist/` for production.
+**Alternative:** plain JavaScript — less to learn up front, but we'd need Prisma's
+older client generator and lose type checking on every database query.
+
+## 009 — Express 5 with a standard response shape
+Express 5 (stable) passes errors from `async` route handlers to the error handler
+automatically; Express 4 needed a wrapper around every route. Every response is
+either `{ data: … }` or `{ error: { code, message, details? } }`, so the web and
+mobile apps handle all responses the same way. `code` is a stable string like
+`ENROLLMENT_EXISTS` that the apps can check, and `message` is for humans.
+**Alternative:** Fastify is faster and has validation built in, but Express has far
+more tutorials and answers online, which matters more for us right now.
+
+## 010 — API is versioned under /api/v1
+Phones keep running old app versions for months. When a breaking change is
+needed, it goes under `/api/v2` while `/api/v1` keeps serving older apps.
