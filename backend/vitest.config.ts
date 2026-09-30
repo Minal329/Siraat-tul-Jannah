@@ -1,4 +1,9 @@
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { defineConfig } from "vitest/config";
+
+// Uploaded files in tests go to a throwaway folder, never backend/uploads.
+const testUploadDir = path.join(tmpdir(), "siraat-test-uploads");
 
 // Tests that touch the database use a separate database that gets wiped
 // between tests — never the dev database. CI overrides this via TEST_DATABASE_URL.
@@ -14,6 +19,7 @@ export default defineConfig({
       DATABASE_URL: testDatabaseUrl,
       JWT_SECRET: "test-only-secret-that-is-at-least-32-characters",
       BCRYPT_ROUNDS: "4",
+      UPLOAD_DIR: testUploadDir,
     },
     // Applies migrations to the test database once before any test runs.
     globalSetup: ["tests/globalSetup.ts"],
