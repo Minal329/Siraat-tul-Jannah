@@ -213,3 +213,21 @@ The running number is assigned while holding a Postgres advisory lock, so simult
 never share a number (a test showed duplicates without it). The PDF is drawn fresh on each
 download (pdfkit, brand fonts via Fontsource), so fixing a misspelled name needs no regeneration.
 The badge is drawn as a simple vector placeholder until the real logo file is added.
+
+## 025 — Website: React + Vite, plain CSS, bundled fonts
+The website is React 19 + TypeScript, built with Vite (the standard React setup today), with
+React Router for addresses. Styling is plain CSS with the brand colours as variables — no UI
+framework, because the prototype's look is simple and one fewer library is one fewer thing to learn.
+**Alternative:** Next.js — adds server rendering (better search-engine visibility for the public
+catalog) but more concepts; worth revisiting if the catalog must rank on Google.
+- **Login storage:** the 15-minute access token lives only in memory; the 30-day refresh token is in
+  localStorage so people stay logged in. Any script injected into the page could read it, so this is
+  a known trade-off; moving it to an httpOnly cookie is on the list for the security step (15).
+  After a reload the site renews the login *before* its first request, saving a wasted round trip
+  on every page load on slow connections.
+- **Fonts:** Amiri and Work Sans are bundled with the site (Fontsource) instead of loaded from Google
+  Fonts: no dependency on Google being reachable, one fewer outside server, and students' page
+  views aren't shared with a third party.
+- Prototype features not built because the backend doesn't have them yet: course ratings,
+  "Apply Leave", "Mark for Repeat Lesson", course photos upload, and a role picker at sign-up
+  (sign-up only creates students by design — decision 012).

@@ -52,7 +52,12 @@ async function roster(classGroupId: string) {
     include: { student: { select: { id: true, fullName: true } } },
     orderBy: { student: { fullName: "asc" } },
   });
-  return enrollments.map((e) => ({ studentId: e.student.id, fullName: e.student.fullName, enrollmentStatus: e.status }));
+  return enrollments.map((e) => ({
+    studentId: e.student.id,
+    enrollmentId: e.id,
+    fullName: e.student.fullName,
+    enrollmentStatus: e.status,
+  }));
 }
 
 // ── Teachers (and admins) ─────────────────────────────────────────

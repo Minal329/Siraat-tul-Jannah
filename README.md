@@ -7,7 +7,7 @@ recorded lectures and certificates in one place.
 | Folder     | What it is                                   | Status            |
 |------------|----------------------------------------------|-------------------|
 | `backend/` | Node.js + Express API, PostgreSQL via Prisma | API steps 1–10 done |
-| `web/`     | React.js website                             | Not started       |
+| `web/`     | React website (see `web/README.md`)          | All 9 screens     |
 | `mobile/`  | React Native (Expo) app                      | Not started       |
 | `docs/`    | Decisions log and build roadmap              | —                 |
 

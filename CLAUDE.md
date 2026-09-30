@@ -7,7 +7,7 @@ standing brief: keep it short, true, and up to date.
 Online Quran academy LMS for **Siraat tul Jannah** (founder: Hafiza Aqsa Jamil).
 Replaces WhatsApp-based class coordination. One codebase family:
 - `backend/` — Node.js + Express 5 REST API in TypeScript, PostgreSQL via Prisma 7
-- `web/` — React.js desktop website (not scaffolded yet)
+- `web/` — React 19 + Vite + TypeScript website (see `web/README.md` for screens and commands)
 - `mobile/` — React Native (Expo) app (not scaffolded yet)
 - `docs/` — decisions log and build roadmap
 
@@ -34,7 +34,7 @@ The project owner is a coding beginner. When working here:
 ## Brand
 Navy `#0B2A4A` (primary) · Navy 2 `#1B3A63` · Gold `#B48B48` (accent) ·
 Ivory `#F5F0E4` (background) · Text `#14213A`.
-Fonts: **Amiri** (headings/display) + **Work Sans** (body), via Google Fonts.
+Fonts: **Amiri** (headings/display) + **Work Sans** (body), bundled via Fontsource (not the Google Fonts CDN).
 Logo: open book + pen in a gold sunburst circle badge.
 
 ## Backend layout (`backend/src/`)
@@ -88,6 +88,17 @@ Logo: open book + pen in a gold sunburst circle badge.
   turns every error into `{ error: { code, message, details? } }`. Success = `{ data }`.
 - Local imports use the `.ts` extension (ESM + `rewriteRelativeImportExtensions`).
 
+## Web layout (`web/src/`)
+- `lib/api.ts` — every API call goes through `api()` / `apiFile()`: adds the token, renews an expired login
+  once (single-flight), turns errors into `ApiError`. Access token in memory; refresh token in localStorage.
+- `lib/useAuth.ts` (`useAuth`, `homeFor`) + `lib/auth.tsx` (`AuthProvider`); `lib/hooks.ts` (`useLoad`,
+  `useAction`, `usePrivateFileUrl`); `lib/types.ts` mirrors API responses; `lib/format.ts` money/dates.
+- `pages/*` one file per screen; `components/ui.tsx` shared pieces (`Loaded`, `Modal`, `PrivateImage`…).
+- Private files (screenshots, voice notes, PDFs) are fetched with the token (`apiFile`), never linked.
+- Styling: plain CSS in `styles.css`, brand colours as CSS variables; fonts bundled via Fontsource.
+- Must work at phone width (390px) with no sideways scrolling.
+- Commands (inside `web/`): `npm run dev`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
+
 ## Commands (run inside `backend/`)
 - `npm run dev` — start the API with auto-restart on http://localhost:4000/api/v1
 - `npm test` — run tests (vitest + supertest). Needs Postgres running: DB tests use `siraat_test`
@@ -108,6 +119,7 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Never commit secrets. New env vars go in `.env.example` with a placeholder.
 - Schema changes always go through a Prisma migration — never edit the DB by hand.
 - Every new endpoint gets tests in `backend/tests/`; run `npm test` and `npm run typecheck` before committing.
+- Web CI (`.github/workflows/web-ci.yml`): lint → typecheck → tests → build.
 - CI (`.github/workflows/backend-ci.yml`) runs on every PR: install → prisma generate →
   typecheck → tests → build → migrate a fresh DB → fail if schema.prisma has no matching migration.
   A PR is only ready to merge when CI is green.
