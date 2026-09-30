@@ -2,6 +2,7 @@
 // response shape { error: { code, message, details? } } and makes sure
 // internal details (stack traces, SQL) are logged but never sent to users.
 import type { ErrorRequestHandler } from "express";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 import { AppError } from "../utils/AppError.ts";
 
@@ -32,6 +33,16 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 
   if (err?.type === "entity.too.large") {
     res.status(413).json({ error: { code: "PAYLOAD_TOO_LARGE", message: "Request body is too large." } });
+    return;
+  }
+
+  // Problems with a file upload (thrown by multer).
+  if (err instanceof MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(413).json({ error: { code: "FILE_TOO_LARGE", message: "The file is too large (max 5 MB)." } });
+    } else {
+      res.status(400).json({ error: { code: "INVALID_UPLOAD", message: "Please attach exactly one image file." } });
+    }
     return;
   }
 

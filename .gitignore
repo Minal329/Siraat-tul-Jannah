@@ -21,3 +21,6 @@ Thumbs.db
 *.log
 .vscode/*
 !.vscode/extensions.json
+
+# Uploaded files (payment screenshots etc.) — private user data, never commit
+backend/uploads/

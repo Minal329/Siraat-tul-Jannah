@@ -42,3 +42,17 @@ export async function createUserWithProfile(input: NewUser, db: Prisma.Transacti
     throw err;
   }
 }
+
+// Admins are identified by their login (users.id); records like "reviewed by" point at admins.id.
+export async function getAdminId(userId: string) {
+  const admin = await prisma.admin.findUnique({ where: { userId }, select: { id: true } });
+  if (!admin) throw new AppError(403, "FORBIDDEN", "Only admins can do this.");
+  return admin.id;
+}
+
+// Students are identified by their login (users.id); enrollments point at students.id.
+export async function getStudentId(userId: string) {
+  const student = await prisma.student.findUnique({ where: { userId }, select: { id: true } });
+  if (!student) throw new AppError(403, "FORBIDDEN", "Only students can do this.");
+  return student.id;
+}

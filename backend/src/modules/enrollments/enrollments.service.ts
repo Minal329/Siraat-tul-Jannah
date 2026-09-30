@@ -7,6 +7,8 @@
 import { Prisma } from "../../../generated/prisma/client.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { AppError } from "../../utils/AppError.ts";
+import { toPaymentSummary } from "../payments/payments.service.ts";
+import { getStudentId } from "../users/users.service.ts";
 
 const ACTIVE_STATUSES = ["PENDING", "APPROVED"] as const;
 
@@ -18,6 +20,7 @@ const enrollmentDetails = {
   course: { select: { id: true, title: true, slug: true, feePkr: true } },
   classGroup: { include: { teacher: { select: { fullName: true } } } },
   certificate: { select: { certificateNumber: true, issuedAt: true } },
+  payments: { orderBy: { createdAt: "desc" } },
 } as const;
 type EnrollmentWithDetails = Prisma.EnrollmentGetPayload<{ include: typeof enrollmentDetails }>;
 
@@ -42,14 +45,8 @@ function toStudentEnrollment(enrollment: EnrollmentWithDetails) {
         }
       : null,
     certificate: enrollment.certificate,
+    payments: enrollment.payments.map(toPaymentSummary),
   };
-}
-
-// Students are identified by their login (users.id); enrollments point at students.id.
-export async function getStudentId(userId: string) {
-  const student = await prisma.student.findUnique({ where: { userId }, select: { id: true } });
-  if (!student) throw new AppError(403, "FORBIDDEN", "Only students can do this.");
-  return student.id;
 }
 
 export async function enroll(userId: string, courseId: string) {

@@ -14,6 +14,9 @@ const envSchema = z.object({
   // bcrypt work factor: each +1 doubles hashing time. 12 ≈ 250 ms, which slows
   // down password guessing without making login feel slow. Tests use 4.
   BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
+  // Folder for uploaded files (payment screenshots etc.), relative to backend/.
+  // Must be kept private and backed up — it holds students' financial details.
+  UPLOAD_DIR: z.string().min(1).default("uploads"),
   CORS_ORIGINS: z
     .string()
     .default("http://localhost:5173")

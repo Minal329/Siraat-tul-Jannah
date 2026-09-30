@@ -50,7 +50,14 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Create accounts of any role with `createUserWithProfile` (`modules/users/users.service.ts`);
   pass a transaction client as the 2nd argument when inside `prisma.$transaction`.
 - Endpoints so far: `/health`, `/auth/*`, `/courses` (public, published only), `/enrollments`
-  (students: apply, `/mine`, `/:id/cancel`), `/admin/courses`. Staff-only endpoints go under `/admin/...`.
+  (students: apply, `/mine`, `/:id/cancel`, `/:id/payments`), `/payment-accounts`, `/payments/:id/proof`,
+  `/admin/courses`, `/admin/payment-accounts`, `/admin/payments`. Staff-only endpoints go under `/admin/...`.
+- Identity helpers: `getStudentId` / `getAdminId` (`modules/users/users.service.ts`) turn `req.auth.userId`
+  into the role profile's id.
+- Uploads: `imageUpload("field")` + `requireImage(req.file)` (`middleware/imageUpload.ts`) — memory only,
+  5 MB, type checked from the file's bytes. Save with `saveFile` / read with `locateFile` (`lib/storage.ts`,
+  folder `UPLOAD_DIR`). Never serve uploads statically: stream them from a route that checks who is asking.
+  `payments.proof_image_url` holds a storage key (e.g. `payments/<uuid>.png`), not a public URL.
 - IDs in URLs: `parseId(req.params.id, "Course")` (`utils/parseId.ts`) → 404 for non-UUIDs.
 - Public responses are built field by field (`toPublicCourse` etc.): never expose Zoom passcodes,
   WhatsApp group links or other students' data to people who shouldn't see them.

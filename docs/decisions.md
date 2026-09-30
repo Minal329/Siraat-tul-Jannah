@@ -131,3 +131,20 @@ error into the same friendly message. A test fires 5 simultaneous requests and p
 exactly one succeeds; removing the second layer makes that test fail.
 Students can cancel their own **pending** application (then re-apply); approved ones
 need the academy. Someone else's enrollment answers `404`, never `403`, so IDs can't be probed.
+
+## 018 — Payment screenshots: private, on disk for now, checked by content
+Students upload a screenshot of their Easypaisa/JazzCash transfer; an admin verifies or
+rejects it (with a reason the student sees). Verifying a payment does **not** approve the
+enrollment — that's a separate admin decision (step 8).
+- **Storage:** a folder on the server (`UPLOAD_DIR`) behind `lib/storage.ts`, the only file
+  that knows where files live. **Alternative:** cloud storage (S3, Cloudflare R2, Cloudinary)
+  from day one — sturdier and survives server moves, but needs an account and keys. Switching
+  later means rewriting that one file; the folder must be backed up until then.
+- **Privacy:** screenshots hold financial details, so they are never public. Files get random
+  names, and `GET /payments/:id/proof` streams one only to the student who paid or an admin
+  (everyone else gets 404), with `Cache-Control: private, no-store`.
+- **Safety:** files are held in memory until ownership is checked, capped at 5 MB, and must
+  really be JPEG/PNG/WebP — judged by their first bytes, not the name or browser-sent type.
+  Storage keys are pattern-checked so a crafted path can't reach outside the uploads folder.
+- **One payment waiting at a time** per enrollment keeps the admin queue clean; reviews use a
+  conditional update so two admins clicking at once can't both review the same payment.
