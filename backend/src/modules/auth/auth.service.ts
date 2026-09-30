@@ -92,9 +92,11 @@ export async function refresh(refreshToken: string) {
   if (!stored) throw invalidRefreshToken();
 
   if (stored.revokedAt) {
-    // An already-used token came back: it may have been stolen. Log this user
-    // out everywhere so whoever holds the newer token loses access too.
-    await revokeAllForUser(stored.userId);
+    // A token that was already swapped for a new one came back: it may have been
+    // stolen. Log this user out everywhere so whoever holds the newer token loses
+    // access too. Tokens revoked by logout or a password change are just refused
+    // (e.g. a second phone that hasn't heard about the password change yet).
+    if (stored.rotatedAt) await revokeAllForUser(stored.userId);
     throw invalidRefreshToken();
   }
 
@@ -108,7 +110,7 @@ export async function refresh(refreshToken: string) {
   // Only revoke if still unrevoked, so two simultaneous refreshes can't both succeed.
   const { count } = await prisma.refreshToken.updateMany({
     where: { id: stored.id, revokedAt: null },
-    data: { revokedAt: new Date() },
+    data: { revokedAt: new Date(), rotatedAt: new Date() },
   });
   if (count === 0) throw invalidRefreshToken();
 
@@ -121,6 +123,28 @@ export async function logout(refreshToken: string) {
     where: { tokenHash: hashRefreshToken(refreshToken), revokedAt: null },
     data: { revokedAt: new Date() },
   });
+}
+
+// Change your own password. Every other device is logged out (in case the old
+// password leaked); this device gets a fresh pair of tokens.
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError(404, "NOT_FOUND", "User not found.");
+
+  // 400, not 401: a 401 would make the apps think the session expired and log out.
+  if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    throw new AppError(400, "WRONG_PASSWORD", "Your current password is incorrect.");
+  }
+  if (currentPassword === newPassword) {
+    throw new AppError(400, "SAME_PASSWORD", "Choose a new password that's different from the current one.");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, env.BCRYPT_ROUNDS);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+    prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+  ]);
+  return { tokens: await issueTokens(user) };
 }
 
 export async function getCurrentUser(userId: string) {

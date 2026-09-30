@@ -1,12 +1,21 @@
-// /api/v1/enrollments — students apply for courses, track them, and pay fees.
-// Approving, rejecting and assigning class groups is the admin workflow (step 8).
+// /api/v1/enrollments        — students apply for courses, track them, and pay fees.
+// /api/v1/admin/enrollments  — admins review, approve (into a class group), reject,
+//                              move between groups, and mark courses completed.
 import { Router } from "express";
-import { imageUpload, requireImage } from "../../middleware/imageUpload.ts";
+import { imageUpload, requireImage } from "../../middleware/upload.ts";
 import { requireAuth, requireRole } from "../../middleware/requireAuth.ts";
 import { parseId } from "../../utils/parseId.ts";
-import { createEnrollmentSchema } from "./enrollments.schemas.ts";
+import {
+  adminListQuery,
+  approveSchema,
+  createEnrollmentSchema,
+  moveSchema,
+  rejectEnrollmentSchema,
+} from "./enrollments.schemas.ts";
+import * as adminService from "./enrollments.admin.service.ts";
 import { submitPaymentSchema } from "../payments/payments.schemas.ts";
 import * as paymentsService from "../payments/payments.service.ts";
+import * as sessionsService from "../sessions/sessions.service.ts";
 import * as enrollmentsService from "./enrollments.service.ts";
 
 export const enrollmentsRouter = Router();
@@ -19,6 +28,17 @@ enrollmentsRouter.post("/", async (req, res) => {
 
 enrollmentsRouter.get("/mine", async (req, res) => {
   res.json({ data: await enrollmentsService.listMyEnrollments(req.auth!.userId) });
+});
+
+// My upcoming classes across all my current courses.
+enrollmentsRouter.get("/schedule", async (req, res) => {
+  res.json({ data: await sessionsService.mySchedule(req.auth!.userId) });
+});
+
+// My attendance record for one enrollment.
+enrollmentsRouter.get("/:id/attendance", async (req, res) => {
+  const id = parseId(req.params.id, "Enrollment");
+  res.json({ data: await sessionsService.myAttendance(req.auth!.userId, id) });
 });
 
 enrollmentsRouter.post("/:id/cancel", async (req, res) => {
@@ -38,4 +58,35 @@ enrollmentsRouter.post("/:id/payments", imageUpload("proof"), async (req, res) =
 enrollmentsRouter.get("/:id/payments", async (req, res) => {
   const id = parseId(req.params.id, "Enrollment");
   res.json({ data: await paymentsService.listMyPayments(req.auth!.userId, id) });
+});
+
+export const adminEnrollmentsRouter = Router();
+adminEnrollmentsRouter.use(requireAuth, requireRole("ADMIN"));
+
+// e.g. GET /admin/enrollments?status=PENDING — the approval queue
+adminEnrollmentsRouter.get("/", async (req, res) => {
+  res.json({ data: await adminService.listEnrollments(adminListQuery.parse(req.query)) });
+});
+
+adminEnrollmentsRouter.post("/:id/approve", async (req, res) => {
+  const id = parseId(req.params.id, "Enrollment");
+  const options = approveSchema.parse(req.body);
+  res.json({ data: await adminService.approveEnrollment(req.auth!.userId, id, options) });
+});
+
+adminEnrollmentsRouter.post("/:id/reject", async (req, res) => {
+  const id = parseId(req.params.id, "Enrollment");
+  const { reason } = rejectEnrollmentSchema.parse(req.body);
+  res.json({ data: await adminService.rejectEnrollment(id, reason) });
+});
+
+adminEnrollmentsRouter.post("/:id/move", async (req, res) => {
+  const id = parseId(req.params.id, "Enrollment");
+  const { classGroupId } = moveSchema.parse(req.body);
+  res.json({ data: await adminService.moveEnrollment(id, classGroupId) });
+});
+
+adminEnrollmentsRouter.post("/:id/complete", async (req, res) => {
+  const id = parseId(req.params.id, "Enrollment");
+  res.json({ data: await adminService.completeEnrollment(id) });
 });

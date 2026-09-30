@@ -39,9 +39,9 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   // Problems with a file upload (thrown by multer).
   if (err instanceof MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
-      res.status(413).json({ error: { code: "FILE_TOO_LARGE", message: "The file is too large (max 5 MB)." } });
+      res.status(413).json({ error: { code: "FILE_TOO_LARGE", message: "The file is too large." } });
     } else {
-      res.status(400).json({ error: { code: "INVALID_UPLOAD", message: "Please attach exactly one image file." } });
+      res.status(400).json({ error: { code: "INVALID_UPLOAD", message: "Please attach exactly one file." } });
     }
     return;
   }

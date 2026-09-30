@@ -148,3 +148,50 @@ enrollment — that's a separate admin decision (step 8).
   Storage keys are pattern-checked so a crafted path can't reach outside the uploads folder.
 - **One payment waiting at a time** per enrollment keeps the admin queue clean; reviews use a
   conditional update so two admins clicking at once can't both review the same payment.
+
+## 019 — Admin workflow: approval needs a verified payment, unless deliberate
+Admins approve a PENDING enrollment **into a class group** in one step (a student never
+sits "approved but groupless"). Approving without a verified payment returns
+`409 PAYMENT_NOT_VERIFIED` unless the request says `approveWithoutPayment: true` — so
+scholarships and cash payments are possible, but never by accident. Rejections need a
+reason the student sees. Approved students can be moved to another group of the same
+course; "complete" closes the enrollment, allowing a new batch later and (step 11) a certificate.
+Group capacity is checked while holding a row lock on the group, because a plain
+"count, then insert" lets two simultaneous approvals both take the last seat (a test
+showed this happening in 3 of 5 runs without the lock).
+**Alternative:** approve first, assign a group later — more flexible, but it creates
+approved students with no class, WhatsApp group or teacher.
+
+## 020 — Staff accounts and passwords
+Admins create teachers from the dashboard; the teacher gets a strong temporary password,
+shown once (response marked `Cache-Control: no-store`), and changes it with
+`POST /auth/change-password`. Changing a password logs out every other device. Admins can
+disable any account except their own (disabling logs it out everywhere).
+A wrong current password returns **400**, not 401, because the apps treat 401 as
+"session expired, log in again".
+While testing this we found a flaw in decision 012: a second device refreshing with a
+token revoked by a password change looked like theft and logged the user out everywhere.
+Tokens now record `rotatedAt`, and only replaying a *rotated* token counts as theft.
+
+## 021 — Classes and attendance
+Teachers schedule classes ("sessions") for **their own** class groups and mark attendance
+(PRESENT / LATE / ABSENT / EXCUSED, with an optional note); another teacher's group answers 404.
+Admins can use the teacher area for any group, e.g. to cover for an absent teacher.
+Times are sent with their timezone (`2027-01-15T20:00:00+05:00`) and stored in UTC, so a
+student abroad sees the correct local time. Attendance can be corrected later (it's an
+"upsert"), but only once a class has started, never for a cancelled class, and only for
+students on that group's roster. A student's attendance rate counts LATE as attending and
+leaves EXCUSED out entirely, so an approved absence never lowers their percentage.
+
+## 022 — Teacher feedback: text and voice notes
+Teachers send a written note, a voice note, or both (a voice note with a short caption) —
+voice matters for a Quran academy, where correcting recitation is easier heard than read.
+Only the teacher of the student's class group can send feedback, and only once the student
+is approved (or has completed). Voice notes accept the formats phones and browsers actually
+record — WebM, Ogg, MP3, M4A (iPhone), WAV — checked from the file's bytes, up to 10 MB.
+They're stored like payment screenshots (random names, private) and streamed only to the
+student, the teacher who recorded them, or an admin. Streaming supports "Range" requests,
+which iPhone and Android audio players need to seek.
+The recording's length is sent by the app; the server doesn't decode audio to measure it.
+**Alternative:** send voice notes through WhatsApp as today — familiar, but nothing is kept
+with the student's record and the academy can't see it.

@@ -3,7 +3,7 @@ import { Router } from "express";
 import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { requireAuth } from "../../middleware/requireAuth.ts";
 import { AppError } from "../../utils/AppError.ts";
-import { loginSchema, refreshTokenSchema, registerSchema } from "./auth.schemas.ts";
+import { changePasswordSchema, loginSchema, refreshTokenSchema, registerSchema } from "./auth.schemas.ts";
 import * as authService from "./auth.service.ts";
 
 // Slows down password guessing. Note: many Pakistani mobile users share one
@@ -59,6 +59,16 @@ export function createAuthRouter() {
     await authService.logout(refreshToken);
     res.status(204).send();
   });
+
+  router.post(
+    "/change-password",
+    requireAuth,
+    limiter({ windowMs: 15 * 60 * 1000, limit: 10, onlyCountFailures: true }),
+    async (req, res) => {
+      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+      res.json({ data: await authService.changePassword(req.auth!.userId, currentPassword, newPassword) });
+    },
+  );
 
   router.get("/me", requireAuth, async (req, res) => {
     res.json({ data: await authService.getCurrentUser(req.auth!.userId) });

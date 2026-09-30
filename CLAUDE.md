@@ -51,13 +51,28 @@ Logo: open book + pen in a gold sunburst circle badge.
   pass a transaction client as the 2nd argument when inside `prisma.$transaction`.
 - Endpoints so far: `/health`, `/auth/*`, `/courses` (public, published only), `/enrollments`
   (students: apply, `/mine`, `/:id/cancel`, `/:id/payments`), `/payment-accounts`, `/payments/:id/proof`,
-  `/admin/courses`, `/admin/payment-accounts`, `/admin/payments`. Staff-only endpoints go under `/admin/...`.
-- Identity helpers: `getStudentId` / `getAdminId` (`modules/users/users.service.ts`) turn `req.auth.userId`
+  `/admin/courses`, `/admin/class-groups`, `/admin/enrollments` (approve/reject/move/complete),
+  `/admin/payment-accounts`, `/admin/payments`, `/admin/teachers`, `/admin/users/:id/status`,
+  `/auth/change-password`, `/teacher/*` (class groups, sessions, attendance — teachers see only
+  their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`,
+  `/teacher/feedback` (send text/voice, list sent), `/feedback/mine`, `/feedback/:id/read`,
+  `/feedback/:id/voice` (student, its teacher, or admin).
+  Staff-only endpoints go under `/admin/...`, the teacher's area under `/teacher/...`.
+- Teacher ownership: `loadGroupFor(auth, groupId)` in `sessions.service.ts` — another teacher's group
+  answers 404. Reuse it for anything a teacher does to "their" class.
+- Enrollment lifecycle: PENDING → APPROVED (into a class group) → COMPLETED; PENDING → REJECTED;
+  student may cancel PENDING. Approving needs a VERIFIED payment unless `approveWithoutPayment: true`.
+- Capacity checks lock the class group row (`SELECT … FOR UPDATE` inside `$transaction`) so
+  simultaneous approvals can't overfill a group. Use the same pattern for any "last seat" check.
+- Refresh tokens: `rotatedAt` is set only when swapped for a new one; only replaying a rotated
+  token triggers "log out everywhere". Logout / password change / disabling just set `revokedAt`.
+- Identity helpers: `getStudentId` / `getTeacherId` / `getAdminId` (`modules/users/users.service.ts`) turn `req.auth.userId`
   into the role profile's id.
-- Uploads: `imageUpload("field")` + `requireImage(req.file)` (`middleware/imageUpload.ts`) — memory only,
-  5 MB, type checked from the file's bytes. Save with `saveFile` / read with `locateFile` (`lib/storage.ts`,
+- Uploads (`middleware/upload.ts`): `imageUpload("field")` + `requireImage(req.file)` (5 MB) or
+  `audioUpload("field")` + `requireAudio(file)` (10 MB) — memory only, type checked from the file's bytes. Save with `saveFile` / read with `locateFile` (`lib/storage.ts`,
   folder `UPLOAD_DIR`). Never serve uploads statically: stream them from a route that checks who is asking.
-  `payments.proof_image_url` holds a storage key (e.g. `payments/<uuid>.png`), not a public URL.
+  `payments.proof_image_url` and `feedback.voice_url` hold storage keys (e.g. `payments/<uuid>.png`),
+  not public URLs. Stream files with `res.sendFile` (supports Range, needed by phone audio players).
 - IDs in URLs: `parseId(req.params.id, "Course")` (`utils/parseId.ts`) → 404 for non-UUIDs.
 - Public responses are built field by field (`toPublicCourse` etc.): never expose Zoom passcodes,
   WhatsApp group links or other students' data to people who shouldn't see them.
@@ -79,6 +94,7 @@ Logo: open book + pen in a gold sunburst circle badge.
 - `npm run db:studio` — browse the database in a GUI
 - `npm run db:seed` — fill an EMPTY dev database with [SAMPLE] data (all passwords `password123`;
   logins printed). `npm run db:reset` wipes the dev DB, re-migrates and re-seeds. Never in production.
+  Prisma refuses `migrate reset` when run by an AI assistant — the owner runs it; don't bypass that.
 - `npm run create-admin -- --email x@y.com --name "Full Name"` — real admin account (production-safe).
   Password from `ADMIN_PASSWORD` env var, else generated and printed once. Never pass passwords as flags.
 - Local DB URL lives in `backend/.env` (copy from `.env.example`; never commit `.env`).

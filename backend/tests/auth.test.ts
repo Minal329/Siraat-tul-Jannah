@@ -294,3 +294,18 @@ describe("requireRole", () => {
     }
   });
 });
+
+describe("refresh after logout (not theft)", () => {
+  it("a logged-out device retrying its old token doesn't log the user out of other devices", async () => {
+    const user = await createUser({});
+    const phone = (await login(user.email, user.password)).body.data.tokens.refreshToken;
+    const laptop = (await login(user.email, user.password)).body.data.tokens.refreshToken;
+    await request(app).post("/api/v1/auth/logout").send({ refreshToken: phone });
+
+    const phoneRetry = await request(app).post("/api/v1/auth/refresh").send({ refreshToken: phone });
+    const laptopRefresh = await request(app).post("/api/v1/auth/refresh").send({ refreshToken: laptop });
+
+    expect(phoneRetry.status).toBe(401);
+    expect(laptopRefresh.status).toBe(200);
+  });
+});

@@ -5,13 +5,12 @@
 // Password: set ADMIN_PASSWORD to choose one, otherwise a strong one is generated
 // and printed once. It's never taken as a --flag, because typed commands are
 // saved in shell history where others could read them.
-import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { ZodError } from "zod";
 import { prisma } from "../lib/prisma.ts";
 import { registerSchema } from "../modules/auth/auth.schemas.ts";
-import { createUserWithProfile } from "../modules/users/users.service.ts";
+import { createUserWithProfile, generateTemporaryPassword } from "../modules/users/users.service.ts";
 import { AppError } from "../utils/AppError.ts";
 
 export async function createAdmin(options: {
@@ -20,7 +19,7 @@ export async function createAdmin(options: {
   whatsappNumber?: string;
   password?: string;
 }) {
-  const generatedPassword = options.password ? undefined : randomBytes(12).toString("base64url");
+  const generatedPassword = options.password ? undefined : generateTemporaryPassword();
   // Same rules as signup: valid email, 8–72 byte password, real name, optional WhatsApp number.
   const input = registerSchema.parse({ ...options, password: options.password ?? generatedPassword });
   const user = await createUserWithProfile({ ...input, role: "ADMIN" });
