@@ -11,17 +11,24 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { env } from "../config/env.ts";
 
-export type StoredFileType = "jpg" | "png" | "webp";
+export type ImageFileType = "jpg" | "png" | "webp";
+export type AudioFileType = "webm" | "ogg" | "mp3" | "m4a" | "wav";
+export type StoredFileType = ImageFileType | AudioFileType;
 
 export const CONTENT_TYPES: Record<StoredFileType, string> = {
   jpg: "image/jpeg",
   png: "image/png",
   webp: "image/webp",
+  webm: "audio/webm",
+  ogg: "audio/ogg",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  wav: "audio/wav",
 };
 
 // Only keys we generate ourselves are accepted, so a crafted key like
 // "../../.env" can never reach outside the uploads folder.
-const KEY_PATTERN = /^[a-z-]+\/[0-9a-f-]{36}\.(jpg|png|webp)$/;
+const KEY_PATTERN = /^[a-z-]+\/[0-9a-f-]{36}\.(jpg|png|webp|webm|ogg|mp3|m4a|wav)$/;
 
 function root() {
   return path.resolve(env.UPLOAD_DIR);

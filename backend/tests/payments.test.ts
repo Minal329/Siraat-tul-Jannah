@@ -5,7 +5,7 @@ import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.ts";
 import { prisma } from "../src/lib/prisma.ts";
-import { detectImageType } from "../src/middleware/imageUpload.ts";
+import { detectImageType } from "../src/middleware/upload.ts";
 import { bearer } from "./helpers/auth.ts";
 import { createCourse, createUser, resetDatabase } from "./helpers/db.ts";
 

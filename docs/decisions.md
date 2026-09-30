@@ -172,3 +172,13 @@ A wrong current password returns **400**, not 401, because the apps treat 401 as
 While testing this we found a flaw in decision 012: a second device refreshing with a
 token revoked by a password change looked like theft and logged the user out everywhere.
 Tokens now record `rotatedAt`, and only replaying a *rotated* token counts as theft.
+
+## 021 — Classes and attendance
+Teachers schedule classes ("sessions") for **their own** class groups and mark attendance
+(PRESENT / LATE / ABSENT / EXCUSED, with an optional note); another teacher's group answers 404.
+Admins can use the teacher area for any group, e.g. to cover for an absent teacher.
+Times are sent with their timezone (`2027-01-15T20:00:00+05:00`) and stored in UTC, so a
+student abroad sees the correct local time. Attendance can be corrected later (it's an
+"upsert"), but only once a class has started, never for a cancelled class, and only for
+students on that group's roster. A student's attendance rate counts LATE as attending and
+leaves EXCUSED out entirely, so an approved absence never lowers their percentage.

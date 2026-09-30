@@ -11,7 +11,7 @@ top of the one before, so it can be tested before moving on.
 - [x] **6. Courses & enrollment API** — catalog, enroll, one-active-enrollment rule
 - [x] **7. Payments API** — proof upload (file storage), admin-editable accounts, verification
 - [x] **8. Admin workflow** — approve/reject, assign class group
-- [ ] **9. Class sessions & attendance API**
+- [x] **9. Class sessions & attendance API**
 - [ ] **10. Feedback API** — text + voice notes (audio upload)
 - [ ] **11. Recorded lectures & certificates API** (PDF generation)
 - [ ] **12. Web app** — React + brand theme, all 9 prototype screens wired to the API

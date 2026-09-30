@@ -126,3 +126,10 @@ export async function setUserActive(adminUserId: string, targetUserId: string, i
 
   return { user: { id: user.id, email: user.email, role: user.role, isActive: user.isActive } };
 }
+
+// Teachers are identified by their login (users.id); class groups point at teachers.id.
+export async function getTeacherId(userId: string) {
+  const teacher = await prisma.teacher.findUnique({ where: { userId }, select: { id: true } });
+  if (!teacher) throw new AppError(403, "FORBIDDEN", "Only teachers can do this.");
+  return teacher.id;
+}

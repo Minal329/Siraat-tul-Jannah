@@ -53,17 +53,21 @@ Logo: open book + pen in a gold sunburst circle badge.
   (students: apply, `/mine`, `/:id/cancel`, `/:id/payments`), `/payment-accounts`, `/payments/:id/proof`,
   `/admin/courses`, `/admin/class-groups`, `/admin/enrollments` (approve/reject/move/complete),
   `/admin/payment-accounts`, `/admin/payments`, `/admin/teachers`, `/admin/users/:id/status`,
-  `/auth/change-password`. Staff-only endpoints go under `/admin/...`.
+  `/auth/change-password`, `/teacher/*` (class groups, sessions, attendance — teachers see only
+  their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`.
+  Staff-only endpoints go under `/admin/...`, the teacher's area under `/teacher/...`.
+- Teacher ownership: `loadGroupFor(auth, groupId)` in `sessions.service.ts` — another teacher's group
+  answers 404. Reuse it for anything a teacher does to "their" class.
 - Enrollment lifecycle: PENDING → APPROVED (into a class group) → COMPLETED; PENDING → REJECTED;
   student may cancel PENDING. Approving needs a VERIFIED payment unless `approveWithoutPayment: true`.
 - Capacity checks lock the class group row (`SELECT … FOR UPDATE` inside `$transaction`) so
   simultaneous approvals can't overfill a group. Use the same pattern for any "last seat" check.
 - Refresh tokens: `rotatedAt` is set only when swapped for a new one; only replaying a rotated
   token triggers "log out everywhere". Logout / password change / disabling just set `revokedAt`.
-- Identity helpers: `getStudentId` / `getAdminId` (`modules/users/users.service.ts`) turn `req.auth.userId`
+- Identity helpers: `getStudentId` / `getTeacherId` / `getAdminId` (`modules/users/users.service.ts`) turn `req.auth.userId`
   into the role profile's id.
-- Uploads: `imageUpload("field")` + `requireImage(req.file)` (`middleware/imageUpload.ts`) — memory only,
-  5 MB, type checked from the file's bytes. Save with `saveFile` / read with `locateFile` (`lib/storage.ts`,
+- Uploads (`middleware/upload.ts`): `imageUpload("field")` + `requireImage(req.file)` (5 MB) or
+  `audioUpload("field")` + `requireAudio(file)` (10 MB) — memory only, type checked from the file's bytes. Save with `saveFile` / read with `locateFile` (`lib/storage.ts`,
   folder `UPLOAD_DIR`). Never serve uploads statically: stream them from a route that checks who is asking.
   `payments.proof_image_url` holds a storage key (e.g. `payments/<uuid>.png`), not a public URL.
 - IDs in URLs: `parseId(req.params.id, "Course")` (`utils/parseId.ts`) → 404 for non-UUIDs.
