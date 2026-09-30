@@ -1,0 +1,5 @@
+{
+  // Production build: compile only the app, not tests.
+  "extends": "./tsconfig.json",
+  "include": ["src", "generated"]
+}

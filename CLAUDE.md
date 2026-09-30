@@ -6,7 +6,7 @@ standing brief: keep it short, true, and up to date.
 ## What this is
 Online Quran academy LMS for **Siraat tul Jannah** (founder: Hafiza Aqsa Jamil).
 Replaces WhatsApp-based class coordination. One codebase family:
-- `backend/` — Node.js + Express REST API, PostgreSQL via Prisma 7
+- `backend/` — Node.js + Express 5 REST API in TypeScript, PostgreSQL via Prisma 7
 - `web/` — React.js desktop website (not scaffolded yet)
 - `mobile/` — React Native (Expo) app (not scaffolded yet)
 - `docs/` — decisions log and build roadmap
@@ -37,7 +37,20 @@ Ivory `#F5F0E4` (background) · Text `#14213A`.
 Fonts: **Amiri** (headings/display) + **Work Sans** (body), via Google Fonts.
 Logo: open book + pen in a gold sunburst circle badge.
 
+## Backend layout (`backend/src/`)
+- `app.ts` builds the Express app; `server.ts` starts it. Tests import `createApp()`.
+- `config/env.ts` validates env vars with zod — read settings from `env`, never `process.env`.
+- `lib/prisma.ts` — the single shared Prisma client.
+- `routes/index.ts` mounts one router per feature under `/api/v1` (e.g. `/health`).
+- Errors: `throw new AppError(status, "CODE", "message")`; `middleware/errorHandler.ts`
+  turns every error into `{ error: { code, message, details? } }`. Success = `{ data }`.
+- Local imports use the `.ts` extension (ESM + `rewriteRelativeImportExtensions`).
+
 ## Commands (run inside `backend/`)
+- `npm run dev` — start the API with auto-restart on http://localhost:4000/api/v1
+- `npm test` — run tests (vitest + supertest; database is mocked)
+- `npm run typecheck` — TypeScript check, includes tests
+- `npm run build` / `npm start` — compile to `dist/` and run the compiled server
 - `npm run db:migrate` — create/apply a migration after editing the schema
 - `npm run db:generate` — regenerate the Prisma client
 - `npm run db:studio` — browse the database in a GUI
@@ -46,4 +59,5 @@ Logo: open book + pen in a gold sunburst circle badge.
 ## Conventions
 - Never commit secrets. New env vars go in `.env.example` with a placeholder.
 - Schema changes always go through a Prisma migration — never edit the DB by hand.
+- Every new endpoint gets tests in `backend/tests/`; run `npm test` and `npm run typecheck` before committing.
 - Record significant decisions in `docs/decisions.md`.
