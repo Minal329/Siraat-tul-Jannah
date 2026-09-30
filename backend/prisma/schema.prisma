@@ -80,11 +80,29 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  student Student?
-  teacher Teacher?
-  admin   Admin?
+  student       Student?
+  teacher       Teacher?
+  admin         Admin?
+  refreshTokens RefreshToken[]
 
   @@map("users")
+}
+
+// Long-lived login sessions. The app swaps a refresh token for a new short-lived
+// access token without asking for the password again. Only a SHA-256 hash is
+// stored, so a leaked database can't be used to log in. Revoking = logout.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model Student {

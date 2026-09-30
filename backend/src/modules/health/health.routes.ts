@@ -1,7 +1,7 @@
 // GET /api/v1/health — "is the server alive, and can it reach the database?"
 // Hosting platforms and uptime monitors call this to decide if the app is healthy.
 import { Router } from "express";
-import { prisma } from "../lib/prisma.ts";
+import { prisma } from "../../lib/prisma.ts";
 
 export const healthRouter = Router();
 
