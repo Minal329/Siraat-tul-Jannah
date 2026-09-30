@@ -1,0 +1,21 @@
+{
+  "name": "siraat-backend",
+  "version": "0.1.0",
+  "description": "Siraat tul Jannah API (Node.js + Express + PostgreSQL)",
+  "scripts": {
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "dotenv": "18.0.4",
+    "pg": "8.23.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "prisma": "7.10.0"
+  }
+}
