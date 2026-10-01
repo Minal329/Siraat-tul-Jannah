@@ -331,7 +331,12 @@ export async function myAttendance(userId: string, enrollmentId: string) {
   }
 
   const sessions = await prisma.classSession.findMany({
-    where: { classGroupId: enrollment.classGroupId, status: { not: "CANCELLED" }, scheduledAt: { lte: new Date() } },
+    where: {
+      classGroupId: enrollment.classGroupId,
+      status: { not: "CANCELLED" },
+      // Classes that have happened: their time has come, or the teacher started them early.
+      OR: [{ scheduledAt: { lte: new Date() } }, { startedAt: { not: null } }],
+    },
     include: { attendance: { where: { studentId } } },
     orderBy: { scheduledAt: "desc" },
   });

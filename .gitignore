@@ -24,3 +24,6 @@ Thumbs.db
 
 # Uploaded files (payment screenshots etc.) — private user data, never commit
 backend/uploads/
+
+# Server backups (deploy/backup.sh) — never commit them
+deploy/backups/

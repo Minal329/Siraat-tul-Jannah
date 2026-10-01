@@ -288,3 +288,20 @@ failed or connections are weak (with an optional note, e.g. "Zoom is down — jo
   see real visitors; the server refuses to start in production with http:// addresses.
 - Full checklist and accepted risks: `docs/security.md`.
 
+## 029 — Deployment: one server with Docker Compose (database + API + Caddy)
+The live site runs on one rented Linux server (VPS, ~$5–12/month) as three Docker containers:
+PostgreSQL, the API, and **Caddy**, which serves the website, forwards `/api/*` to the API, and gets
+HTTPS certificates automatically. Everything is in `deploy/` and documented step by step in
+`docs/deployment.md`.
+- **One domain for website and API**, so the login cookie (028) needs no cross-site settings and the
+  browser makes no extra CORS round trips.
+- **Migrations run automatically** on every start (a one-off `migrate` container) before the API starts.
+- **Nightly backups** of the database and uploaded files (`deploy/backup.sh`, tested by restoring into a
+  fresh database); the guide insists on keeping a copy off the server.
+- **Phone app** built in the cloud with Expo EAS (`mobile/eas.json`): an installable APK for testing,
+  then Play Store / App Store builds.
+- A **Deploy check** CI workflow builds both images on every PR so the server setup can't silently break.
+**Alternative:** a managed platform (Render, Railway, Fly.io) — no server to look after, but higher
+monthly cost, and uploaded files need paid persistent storage. Worth it if nobody can do the monthly
+`apt upgrade`; the Dockerfiles work there too.
+

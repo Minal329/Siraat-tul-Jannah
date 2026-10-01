@@ -17,4 +17,4 @@ top of the one before, so it can be tested before moving on.
 - [x] **12. Web app** — React + brand theme, all 9 prototype screens wired to the API
 - [x] **13. Mobile app** — Expo, same screens, shared API client
 - [x] **14. Live classes** — Zoom SDK + WhatsApp fallback links
-- [ ] **15. Testing, security review, deployment**
+- [x] **15. Testing, security review, deployment**

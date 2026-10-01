@@ -101,6 +101,20 @@ describe("teacher: starting, switching and ending a live class", () => {
     expect(marked.status).toBe(200);
   });
 
+  it("a class started early counts in the student's attendance straight away", async () => {
+    const { group, teacherAuth, ayesha } = await classroom();
+    const session = await sessionAt(group.id, 20 * 60 * 1000); // scheduled in 20 minutes
+    await request(app).post(`/api/v1/teacher/sessions/${session.id}/start`).set("Authorization", teacherAuth).send({});
+    await request(app)
+      .put(`/api/v1/teacher/sessions/${session.id}/attendance`)
+      .set("Authorization", teacherAuth)
+      .send({ records: [{ studentId: ayesha.id, status: "PRESENT" }] });
+
+    const res = await request(app).get(`/api/v1/enrollments/${ayesha.enrollmentId}/attendance`).set("Authorization", ayesha.auth);
+
+    expect(res.body.data.summary).toMatchObject({ classes: 1, present: 1, attendanceRate: 100 });
+  });
+
   it("switches to WhatsApp with a note for students when Zoom fails", async () => {
     const { group, teacherAuth, ayesha } = await classroom();
     const session = await sessionAt(group.id, 0);

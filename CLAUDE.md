@@ -9,7 +9,8 @@ Replaces WhatsApp-based class coordination. One codebase family:
 - `backend/` — Node.js + Express 5 REST API in TypeScript, PostgreSQL via Prisma 7
 - `web/` — React 19 + Vite + TypeScript website (see `web/README.md` for screens and commands)
 - `mobile/` — Expo (React Native) app for students and teachers (see `mobile/README.md`)
-- `docs/` — decisions log and build roadmap
+- `deploy/` — production: `docker-compose.yml` (db + migrate + api + Caddy), `Caddyfile`, `backup.sh`
+- `docs/` — decisions log, roadmap, `security.md` checklist, `deployment.md` guide
 
 Clickable prototype (source of truth for screens/UX):
 https://claude.ai/artifact/7m7B8AWvEGj338MsGGGddY
@@ -122,6 +123,15 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Install packages with `EXPO_OFFLINE=1 npx expo install <pkg>` (picks SDK-matching versions).
 - Commands (inside `mobile/`): `npm start`, `npm test` (jest-expo), `npm run typecheck`.
 
+## Deployment (`deploy/`, guide in `docs/deployment.md`)
+- One domain: Caddy serves the website (`web/Dockerfile`, built with `VITE_API_URL=/api/v1`) and proxies
+  `/api/*` to the API (`backend/Dockerfile`, target `runtime`; target `build` runs `prisma migrate deploy`).
+- New API env vars must also be added to the `api` service in `deploy/docker-compose.yml` (and
+  `deploy/.env.example` if the owner sets them). The website's CSP lives in `deploy/Caddyfile` — a new
+  outside domain (video player, image host) must be allowed there.
+- Admin on the server: `docker compose exec api node dist/src/scripts/create-admin.js --email … --name "…"`.
+- Building images in the Claude sandbox needs `--network host` and the sandbox CA — never add that to the Dockerfiles.
+
 ## Commands (run inside `backend/`)
 - `npm run dev` — start the API with auto-restart on http://localhost:4000/api/v1
 - `npm test` — run tests (vitest + supertest). Needs Postgres running: DB tests use `siraat_test`
@@ -142,7 +152,10 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Never commit secrets. New env vars go in `.env.example` with a placeholder.
 - Schema changes always go through a Prisma migration — never edit the DB by hand.
 - Every new endpoint gets tests in `backend/tests/`; run `npm test` and `npm run typecheck` before committing.
-- Web CI (`.github/workflows/web-ci.yml`): lint → typecheck → tests → build.
+- Web CI (`.github/workflows/web-ci.yml`): lint → typecheck → tests → build. Mobile CI: typecheck → tests →
+  web export. Deploy check: validates `deploy/docker-compose.yml` and builds both Docker images.
+- `backend/tests/journey.test.ts` walks the whole academy flow through the API — keep it passing when
+  changing any step of it.
 - CI (`.github/workflows/backend-ci.yml`) runs on every PR: install → prisma generate →
   typecheck → tests → build → migrate a fresh DB → fail if schema.prisma has no matching migration.
   A PR is only ready to merge when CI is green.

@@ -1,0 +1,37 @@
+# Deployment check — makes sure the server setup in deploy/ still builds.
+# Builds the API and website Docker images (nothing is published) and validates
+# deploy/docker-compose.yml. Runs on pull requests that touch any of them.
+name: Deploy check
+
+on:
+  pull_request:
+    paths: ["backend/**", "web/**", "deploy/**", ".github/workflows/deploy-check.yml"]
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Validate docker-compose.yml
+        working-directory: deploy
+        run: docker compose --env-file .env.example config --quiet
+
+      - name: Build API image
+        run: docker build --target runtime -t siraat-api backend
+
+      - name: Build migrations image
+        run: docker build --target build -t siraat-migrate backend
+
+      - name: Build website image
+        run: docker build -t siraat-web web

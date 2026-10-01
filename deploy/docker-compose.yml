@@ -1,0 +1,71 @@
+# The whole live site on one server: database + API + website (Caddy).
+# Usage (inside deploy/): cp .env.example .env, fill it in, then
+#   docker compose up -d --build
+# See docs/deployment.md for the full walkthrough.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: siraat
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: siraat
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U siraat -d siraat"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Runs once on every start: applies new database migrations, then exits.
+  migrate:
+    build: { context: ../backend, target: build }
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: postgresql://siraat:${POSTGRES_PASSWORD}@db:5432/siraat
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    build: { context: ../backend, target: runtime }
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://siraat:${POSTGRES_PASSWORD}@db:5432/siraat
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in deploy/.env}
+      PUBLIC_WEB_URL: https://${DOMAIN}
+      CORS_ORIGINS: https://${DOMAIN}
+      TRUST_PROXY: 1
+      UPLOAD_DIR: /app/uploads
+      ZOOM_ACCOUNT_ID: ${ZOOM_ACCOUNT_ID:-}
+      ZOOM_CLIENT_ID: ${ZOOM_CLIENT_ID:-}
+      ZOOM_CLIENT_SECRET: ${ZOOM_CLIENT_SECRET:-}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build: ../web
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+
+volumes:
+  db-data:
+  uploads:
+  caddy-data:
+  caddy-config:
