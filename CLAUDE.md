@@ -59,7 +59,8 @@ Logo: open book + pen in a gold sunburst circle badge.
   `/feedback/:id/voice` (student, its teacher, or admin), `/lectures` (students), `/teacher/lectures`,
   `/admin/certificates` (issue), `/certificates/verify/:number` (public), `/certificates/:number/pdf`,
   `/teacher/sessions/:id/start|live|end`, `/enrollments/:id/live` + `/live/join`,
-  `/admin/class-groups/zoom-status`, `/admin/class-groups/:id/zoom-meeting`.
+  `/admin/class-groups/zoom-status`, `/admin/class-groups/:id/zoom-meeting`,
+  `/admin/users/:id/reset-password` (students/teachers; temporary password shown once).
 - Live classes: SCHEDULED → (start) LIVE → (end) COMPLETED, only via those endpoints (PATCH may only
   reschedule/cancel). Only one LIVE class per group — hand-written partial unique index
   `class_sessions_one_live_per_group`. While live the teacher can switch `livePlatform` ZOOM ⇄ WHATSAPP.
@@ -77,6 +78,10 @@ Logo: open book + pen in a gold sunburst circle badge.
   student may cancel PENDING. Approving needs a VERIFIED payment unless `approveWithoutPayment: true`.
 - Capacity checks lock the class group row (`SELECT … FOR UPDATE` inside `$transaction`) so
   simultaneous approvals can't overfill a group. Use the same pattern for any "last seat" check.
+- Website logins: requests with `X-Auth-Transport: cookie` get the refresh token as an httpOnly
+  SameSite=Strict cookie (path `/api/v1/auth`) instead of in the body; the mobile app uses the body.
+  `TRUST_PROXY` = number of proxies in front (Caddy = 1). Production refuses http:// URLs in env.
+  Security checklist: `docs/security.md` — re-read it for anything touching logins, files or money.
 - Refresh tokens: `rotatedAt` is set only when swapped for a new one; only replaying a rotated
   token triggers "log out everywhere". Logout / password change / disabling just set `revokedAt`.
 - Identity helpers: `getStudentId` / `getTeacherId` / `getAdminId` (`modules/users/users.service.ts`) turn `req.auth.userId`
@@ -98,7 +103,8 @@ Logo: open book + pen in a gold sunburst circle badge.
 
 ## Web layout (`web/src/`)
 - `lib/api.ts` — every API call goes through `api()` / `apiFile()`: adds the token, renews an expired login
-  once (single-flight), turns errors into `ApiError`. Access token in memory; refresh token in localStorage.
+  once (single-flight), turns errors into `ApiError`. Access token in memory; refresh token in an httpOnly
+  cookie (localStorage only holds a non-secret "logged in" flag).
 - `lib/useAuth.ts` (`useAuth`, `homeFor`) + `lib/auth.tsx` (`AuthProvider`); `lib/hooks.ts` (`useLoad`,
   `useAction`, `usePrivateFileUrl`); `lib/types.ts` mirrors API responses; `lib/format.ts` money/dates.
 - `pages/*` one file per screen; `components/ui.tsx` shared pieces (`Loaded`, `Modal`, `PrivateImage`…).

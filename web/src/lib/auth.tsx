@@ -6,12 +6,12 @@ import { AuthContext } from "./useAuth.ts";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  // Only a returning visitor (with a saved refresh token) needs a check first.
-  const [loading, setLoading] = useState(() => tokenStore.refreshToken !== null);
+  // Only a returning visitor (logged in on this browser before) needs a check first.
+  const [loading, setLoading] = useState(() => tokenStore.hasSession);
 
   // Returning visitor: find out who they are.
   useEffect(() => {
-    if (!tokenStore.refreshToken) return;
+    if (!tokenStore.hasSession) return;
     api<{ user: User }>("/auth/me")
       .then(({ user }) => setUser(user))
       .catch(() => tokenStore.clear())
@@ -33,10 +33,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    const refreshToken = tokenStore.refreshToken;
     tokenStore.clear();
     setUser(null);
-    if (refreshToken) await api("/auth/logout", { body: { refreshToken } }).catch(() => undefined);
+    // The API revokes the token in the cookie and deletes the cookie.
+    await api("/auth/logout", { body: {} }).catch(() => undefined);
   }, []);
 
   const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading, login, register, logout]);

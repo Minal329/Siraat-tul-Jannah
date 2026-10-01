@@ -128,6 +128,29 @@ export async function setUserActive(adminUserId: string, targetUserId: string, i
 }
 
 // Teachers are identified by their login (users.id); class groups point at teachers.id.
+// Someone forgot their password: the admin gives them a new temporary one (shown
+// once, shared privately, e.g. by WhatsApp) and they change it after logging in.
+// Every device they were logged in on is logged out. Admins can't be reset this
+// way — they use "change password", or the create-admin tool on the server.
+export async function resetPassword(adminUserId: string, targetUserId: string) {
+  if (adminUserId === targetUserId) {
+    throw new AppError(409, "USE_CHANGE_PASSWORD", "To change your own password, use Change password.");
+  }
+  const target = await prisma.user.findUnique({ where: { id: targetUserId }, select: { id: true, role: true, email: true } });
+  if (!target) throw new AppError(404, "NOT_FOUND", "User not found.");
+  if (target.role === "ADMIN") {
+    throw new AppError(403, "CANNOT_RESET_ADMIN", "Admin passwords can't be reset from the dashboard.");
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const passwordHash = await bcrypt.hash(temporaryPassword, env.BCRYPT_ROUNDS);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: target.id }, data: { passwordHash } }),
+    prisma.refreshToken.updateMany({ where: { userId: target.id, revokedAt: null }, data: { revokedAt: new Date() } }),
+  ]);
+  return { email: target.email, temporaryPassword };
+}
+
 export async function getTeacherId(userId: string) {
   const teacher = await prisma.teacher.findUnique({ where: { userId }, select: { id: true } });
   if (!teacher) throw new AppError(403, "FORBIDDEN", "Only teachers can do this.");

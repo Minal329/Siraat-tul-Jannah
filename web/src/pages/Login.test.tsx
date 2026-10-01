@@ -32,7 +32,7 @@ describe("Login page", () => {
       json(200, {
         data: {
           user: { id: "u1", email: "ayesha@siraat.test", role: "STUDENT", profile: { id: "s1", fullName: "Ayesha", whatsappNumber: null } },
-          tokens: { accessToken: "a", refreshToken: "r", accessTokenExpiresIn: 900 },
+          tokens: { accessToken: "a", accessTokenExpiresIn: 900 },
         },
       }),
     );
@@ -44,7 +44,8 @@ describe("Login page", () => {
 
     expect(await screen.findByText("Student home")).toBeInTheDocument();
     expect(JSON.parse(fetchMock.mock.calls[0][1]!.body as string)).toEqual({ email: "ayesha@siraat.test", password: "password123" });
-    expect(tokenStore.refreshToken).toBe("r");
+    expect(tokenStore.hasSession).toBe(true);
+    expect(fetchMock.mock.calls[0][1]!.credentials).toBe("include"); // so the browser stores the login cookie
   });
 
   it("shows the server's message for a wrong password", async () => {

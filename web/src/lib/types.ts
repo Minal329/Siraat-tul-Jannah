@@ -140,7 +140,7 @@ export type AdminEnrollment = {
   status: EnrollmentStatus;
   appliedAt: string;
   rejectionReason: string | null;
-  student: { id: string; fullName: string; whatsappNumber: string | null; email: string };
+  student: { id: string; userId: string; fullName: string; whatsappNumber: string | null; email: string };
   course: { id: string; title: string; feePkr: number };
   classGroup: { id: string; name: string } | null;
   certificate: { certificateNumber: string; issuedAt: string } | null;

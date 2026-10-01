@@ -274,3 +274,17 @@ failed or connections are weak (with an optional note, e.g. "Zoom is down — jo
   connections just as well. **Revisit** if the academy needs recording or attendance straight
   from Zoom's own data (Zoom webhooks could report exact join/leave times).
 
+## 028 — Security step: login cookie, password resets, production guards
+- **Website refresh token → httpOnly cookie.** Decision 025 kept it in localStorage, where any
+  injected script could steal a 30-day login. Now the API sets it as an httpOnly, SameSite=Strict
+  cookie limited to `/api/v1/auth`, and only reads it when the request carries the
+  `X-Auth-Transport: cookie` header (which other websites can't add). The phone app keeps using
+  secure storage. Existing website users are moved over on their next visit, without logging in again.
+  This works because the website and API are served from the same domain (see deployment, 029).
+- **Forgotten passwords: the admin issues a temporary password** (shown once, shared on WhatsApp),
+  and everyone can change their password on an Account page. **Alternative:** "reset by email"
+  links — standard, but needs an email service, and many students don't check email.
+- **`TRUST_PROXY` and production checks:** behind Caddy the API must trust one proxy so rate limits
+  see real visitors; the server refuses to start in production with http:// addresses.
+- Full checklist and accepted risks: `docs/security.md`.
+

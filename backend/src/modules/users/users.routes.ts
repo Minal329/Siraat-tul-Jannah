@@ -2,6 +2,8 @@
 // POST  /api/v1/admin/teachers         — create a teacher; returns a temporary password ONCE
 // PATCH /api/v1/admin/users/:id/status — { "isActive": false } disables any account
 //                                        (logs them out everywhere); true re-enables it
+// POST  /api/v1/admin/users/:id/reset-password — forgotten password: returns a temporary one ONCE
+//                                        (students and teachers only; logs them out everywhere)
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/requireAuth.ts";
 import { parseId } from "../../utils/parseId.ts";
@@ -29,4 +31,10 @@ adminUsersRouter.patch("/:id/status", async (req, res) => {
   const id = parseId(req.params.id, "User");
   const { isActive } = setStatusSchema.parse(req.body);
   res.json({ data: await usersService.setUserActive(req.auth!.userId, id, isActive) });
+});
+
+adminUsersRouter.post("/:id/reset-password", async (req, res) => {
+  const id = parseId(req.params.id, "User");
+  res.set("Cache-Control", "no-store");
+  res.json({ data: await usersService.resetPassword(req.auth!.userId, id) });
 });

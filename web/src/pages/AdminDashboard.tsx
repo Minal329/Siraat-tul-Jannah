@@ -99,6 +99,7 @@ function EnrollmentRow({ enrollment: e, groups, onChange }: { enrollment: AdminE
             {payment && ` · ${METHOD_LABELS[payment.method]} PKR ${payment.amountPkr.toLocaleString()}`}
           </div>
           <div className="muted small">{e.student.email}{e.student.whatsappNumber ? ` · ${e.student.whatsappNumber}` : ""} · applied {formatDate(e.appliedAt)}</div>
+          <ResetPasswordButton userId={e.student.userId} name={e.student.fullName} />
         </div>
         {payment ? <StatusPill status={payment.status} /> : <span className="pill pill-bad">No payment</span>}
       </div>
@@ -469,6 +470,7 @@ function TeachersTab() {
                 <div style={{ flex: 1 }}>
                   <strong>{t.fullName}</strong>
                   <div className="muted">{t.email} · {t.activeClassGroups} active group{t.activeClassGroups === 1 ? "" : "s"}</div>
+                  <ResetPasswordButton userId={t.userId} name={t.fullName} />
                 </div>
                 <button className={`btn btn-small ${t.isActive ? "btn-danger" : "btn-outline"}`} onClick={() => setActive(t, !t.isActive)}>
                   {t.isActive ? "Disable" : "Enable"}
@@ -478,6 +480,33 @@ function TeachersTab() {
           </div>
         )}
       </Loaded>
+    </>
+  );
+}
+
+// Forgotten password: the admin gets a temporary one to share privately (shown once).
+function ResetPasswordButton({ userId, name }: { userId: string; name: string }) {
+  const [temporary, setTemporary] = useState<string | null>(null);
+  const { busy, error, run } = useAction();
+
+  async function reset() {
+    if (!window.confirm(`Give ${name} a new temporary password? Their old password stops working and they're logged out everywhere.`)) return;
+    const result = await run(() => api<{ temporaryPassword: string }>(`/admin/users/${userId}/reset-password`, { method: "POST" }));
+    if (result) setTemporary(result.temporaryPassword);
+  }
+
+  if (temporary) {
+    return (
+      <div className="alert alert-ok small" role="status">
+        New temporary password for {name}: <strong style={{ fontFamily: "monospace" }}>{temporary}</strong>
+        <br />Share it privately — it won't be shown again. Ask them to change it after logging in.
+      </div>
+    );
+  }
+  return (
+    <>
+      <button className="link-button small" onClick={reset} disabled={busy}>{busy ? "Resetting…" : "Reset password"}</button>
+      <ErrorMessage error={error} />
     </>
   );
 }

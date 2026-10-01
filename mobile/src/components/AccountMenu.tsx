@@ -1,21 +1,17 @@
-// "Log out" in the top bar of the home screens.
+// "Account" in the top bar of the home screens: opens the account screen
+// (change password, log out).
 import { router } from "expo-router";
 import { Text } from "react-native";
 import { colors, fonts } from "../lib/theme.ts";
-import { useAuth } from "../lib/useAuth.ts";
 
-export function LogoutButton() {
-  const { logout } = useAuth();
+export function AccountButton() {
   return (
     <Text
       accessibilityRole="button"
-      onPress={async () => {
-        await logout();
-        router.replace("/login");
-      }}
+      onPress={() => router.push("/account")}
       style={{ color: colors.ivory, fontFamily: fonts.bodyBold, paddingHorizontal: 12 }}
     >
-      Log out
+      Account
     </Text>
   );
 }

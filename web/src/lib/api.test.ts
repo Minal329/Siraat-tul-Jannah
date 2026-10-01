@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError, tokenStore } from "./api.ts";
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-const tokens = (n: number) => ({ accessToken: `access-${n}`, refreshToken: `refresh-${n}`, accessTokenExpiresIn: 900 });
+const tokens = (n: number) => ({ accessToken: `access-${n}`, accessTokenExpiresIn: 900 });
+const headersOf = (init: RequestInit | undefined) => init!.headers as Record<string, string>;
 
 beforeEach(() => {
   tokenStore.clear();
@@ -36,13 +37,36 @@ describe("api()", () => {
       .mockResolvedValueOnce(json(200, { data: { ok: true } }));
 
     await expect(api("/enrollments/mine")).resolves.toEqual({ ok: true });
-    expect(fetchMock.mock.calls[1][0]).toContain("/auth/refresh");
-    expect((fetchMock.mock.calls[2][1]!.headers as Record<string, string>).Authorization).toBe("Bearer access-2");
-    expect(tokenStore.refreshToken).toBe("refresh-2");
+    const [refreshUrl, refreshInit] = fetchMock.mock.calls[1];
+    expect(refreshUrl).toContain("/auth/refresh");
+    // The refresh token travels in the httpOnly cookie, never through JavaScript.
+    expect(refreshInit!.credentials).toBe("include");
+    expect(headersOf(refreshInit)["X-Auth-Transport"]).toBe("cookie");
+    expect(JSON.parse(String(refreshInit!.body))).toEqual({});
+    expect(headersOf(fetchMock.mock.calls[2][1]).Authorization).toBe("Bearer access-2");
+  });
+
+  it("never stores a secret in localStorage — only that someone is logged in", async () => {
+    tokenStore.save(tokens(1));
+    expect(Object.values({ ...localStorage })).toEqual(["1"]);
+  });
+
+  it("moves a refresh token saved by the old version into the cookie, then deletes it", async () => {
+    localStorage.setItem("stj.refreshToken", "legacy-token");
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(json(200, { data: { tokens: tokens(2) } }))
+      .mockResolvedValueOnce(json(200, { data: { ok: true } }));
+
+    await api("/enrollments/mine");
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]!.body))).toEqual({ refreshToken: "legacy-token" });
+    expect(localStorage.getItem("stj.refreshToken")).toBeNull();
+    expect(tokenStore.hasSession).toBe(true);
   });
 
   it("after a page reload, renews the login before the first request instead of after a refusal", async () => {
-    localStorage.setItem("stj.refreshToken", "refresh-1"); // saved from last visit; no access token in memory
+    localStorage.setItem("stj.loggedIn", "1"); // logged in on a previous visit; no access token in memory
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(json(200, { data: { tokens: tokens(2) } }))
@@ -51,7 +75,7 @@ describe("api()", () => {
     await expect(api("/enrollments/mine")).resolves.toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toContain("/auth/refresh");
-    expect((fetchMock.mock.calls[1][1]!.headers as Record<string, string>).Authorization).toBe("Bearer access-2");
+    expect(headersOf(fetchMock.mock.calls[1][1]).Authorization).toBe("Bearer access-2");
   });
 
   it("sends only one renewal when several requests expire together", async () => {
@@ -73,7 +97,7 @@ describe("api()", () => {
       .mockResolvedValueOnce(json(401, { error: { code: "INVALID_REFRESH_TOKEN", message: "Your session has expired." } }));
 
     await expect(api("/auth/me")).rejects.toMatchObject({ status: 401 });
-    expect(tokenStore.refreshToken).toBeNull();
+    expect(tokenStore.hasSession).toBe(false);
   });
 
   it("explains network failures in plain words", async () => {

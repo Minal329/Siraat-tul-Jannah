@@ -3,7 +3,7 @@
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { Platform, Text, View } from "react-native";
-import { LogoutButton } from "../../components/AccountMenu.tsx";
+import { AccountButton } from "../../components/AccountMenu.tsx";
 import { Button, Card, Chip, Empty, ErrorText, Field, Greeting, Loaded, Muted, Screen, SectionTitle, Title, styles } from "../../components/ui.tsx";
 import { VoiceRecorder } from "../../components/VoiceRecorder.tsx";
 import { api } from "../../lib/api.ts";
@@ -21,7 +21,7 @@ export default function TeacherHome() {
 
   return (
     <Screen onRefresh={groups.reload} refreshing={groups.loading && !!groups.data}>
-      <Stack.Screen options={{ title: "Teacher Dashboard", headerRight: () => <LogoutButton /> }} />
+      <Stack.Screen options={{ title: "Teacher Dashboard", headerRight: () => <AccountButton /> }} />
       <Greeting title={`Assalamu Alaikum, ${greetingName(user?.profile?.fullName)}`} text="Mark attendance and review today's class" />
       <Loaded state={groups}>
         {({ classGroups }) =>

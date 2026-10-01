@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router";
 import { Spinner } from "./components/ui.tsx";
 import { homeFor, useAuth } from "./lib/useAuth.ts";
 import type { Role } from "./lib/types.ts";
+import { AccountPage } from "./pages/Account.tsx";
 import { AdminDashboardPage } from "./pages/AdminDashboard.tsx";
 import { CatalogPage } from "./pages/Catalog.tsx";
 import { CertificatePage, VerifyPage } from "./pages/Certificate.tsx";
@@ -52,6 +53,7 @@ export function App() {
       <Route path="/teacher" element={<RequireRole roles={["TEACHER", "ADMIN"]}><TeacherDashboardPage /></RequireRole>} />
       <Route path="/teacher/lectures" element={<RequireRole roles={["TEACHER", "ADMIN"]}><TeacherLecturesPage /></RequireRole>} />
 
+      <Route path="/account" element={<RequireRole roles={["STUDENT", "TEACHER", "ADMIN"]}><AccountPage /></RequireRole>} />
       <Route path="/admin" element={<RequireRole roles={["ADMIN"]}><AdminDashboardPage /></RequireRole>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
