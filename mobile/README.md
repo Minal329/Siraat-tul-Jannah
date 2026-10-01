@@ -14,6 +14,11 @@ Android and iPhone app for **students, teachers and admins** of Siraat tul Janna
 | Certificate — drawn in the app, **Save Image** (PNG to photos) / **Share** | `src/app/student/certificate/[number].tsx` |
 | Teacher dashboard (schedule, attendance, feedback, voice recording) | `src/app/teacher/index.tsx` |
 | Admin dashboard (applications, payment screenshots, approve & assign, reject, payment numbers) | `src/app/admin/index.tsx` |
+| Admin → Courses (add, edit, publish/unpublish) | `src/app/admin/courses.tsx` |
+| Admin → Class groups (teacher, schedule, dates, capacity, Zoom/WhatsApp, close a batch) | `src/app/admin/groups.tsx` |
+| Admin → Teachers (add with temporary password, reset password, disable) | `src/app/admin/teachers.tsx` |
+| Admin → Students (move group, mark complete, issue/view certificate, reset password) | `src/app/admin/students.tsx` |
+| Recorded lectures for teachers & admins (add video links, publish) | `src/app/teacher/lectures.tsx` |
 | Account (change password, log out) | `src/app/account.tsx` |
 
 ## Run it

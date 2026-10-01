@@ -22,6 +22,11 @@ top of the one before, so it can be tested before moving on.
 ## Mobile-only (decision 030)
 - [x] **16. Remove the website** — and the PDF / public verify page; certificates are PNG images made in the app
 - [x] **17. Admin dashboard in the app** — applications, payment screenshots, approve & assign, reject, payment numbers
-- [ ] **18. Admin: courses** — add, edit, publish/unpublish
-- [ ] **19. Admin: class groups & teachers** — batches, teachers, Zoom/WhatsApp links, password resets
-- [ ] **20. Admin: complete courses & issue certificates**
+- [x] **18. Admin: courses** — add, edit, publish/unpublish
+- [x] **19. Admin: class groups & teachers** — batches, teachers, Zoom/WhatsApp links, password resets;
+  plus **recorded lectures** for teachers in the app (only the website had them before)
+- [x] **20. Admin: complete courses & issue certificates** — Students screen: move group, mark complete,
+  issue, view/save/share the certificate image, reset passwords
+
+Everything on the roadmap is built. Next: test on real phones (Expo Go / an Android test build),
+then go live with `docs/deployment.md`.

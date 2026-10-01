@@ -86,8 +86,9 @@ docker compose exec api node dist/src/scripts/create-admin.js --email you@exampl
 A strong password is generated and **printed once** — save it in a password manager, log in, and
 change it on the **Account** page if you like. Then, log in to the **app** as the admin:
 1. **Payment accounts** — the ⚙ on the admin dashboard: the Easypaisa / JazzCash numbers students pay to.
-2. **Courses, teachers and class groups** — their admin screens are being added to the app next
-   (see `docs/roadmap.md`).
+2. **Courses** — add each course (tick "Show in the catalog" when it should appear).
+3. **Teachers** — add each teacher; send the temporary password privately with the share button.
+4. **Groups** — create each batch with its teacher, schedule, Zoom meeting and WhatsApp group link.
 
 ## 7. Backups (do this on day one)
 The database and the uploaded files (payment screenshots, voice notes) can't be re-created, so back them up

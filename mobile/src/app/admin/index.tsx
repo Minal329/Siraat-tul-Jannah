@@ -3,12 +3,13 @@
 // picks a class group, and taps Approve & Assign (which also marks the payment
 // as verified) or Reject (with a reason the student sees). The gear opens the
 // payment account numbers students pay to.
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { AccountButton } from "../../components/AccountMenu.tsx";
 import { Icon } from "../../components/Icon.tsx";
 import { PrivateImage } from "../../components/PrivateImage.tsx";
+import { Sheet } from "../../components/Sheet.tsx";
 import { Button, Chip, Empty, ErrorText, Field, Loaded, Muted, Screen, SectionTitle, styles } from "../../components/ui.tsx";
 import { api } from "../../lib/api.ts";
 import { formatPkr, initials, METHOD_LABELS } from "../../lib/format.ts";
@@ -18,6 +19,14 @@ import type { AdminClassGroup, AdminEnrollment, PaymentAccount, PaymentMethod } 
 
 type Outcome = { enrollment: AdminEnrollment; result: "approved" | "rejected"; detail: string };
 const AVATAR_COLORS = [colors.navy, colors.navy2, colors.gold];
+const MANAGE = [
+  ["/admin/courses", "Courses"],
+  ["/admin/groups", "Groups"],
+  ["/admin/teachers", "Teachers"],
+  ["/admin/students", "Students"],
+  ["/teacher", "Classes"],
+  ["/teacher/lectures", "Lectures"],
+] as const;
 
 function startOfToday() {
   const d = new Date();
@@ -63,6 +72,15 @@ export default function AdminHome() {
           <Stat value={state.data ? String(state.data.pending.length) : "–"} label="Pending" />
           <Stat value={state.data ? String(state.data.approvedToday) : "–"} label="Approved Today" />
         </View>
+      </View>
+
+      {/* Everything else the admin manages */}
+      <View style={s.manage}>
+        {MANAGE.map(([href, label]) => (
+          <Pressable key={href} accessibilityRole="link" onPress={() => router.push(href)} style={({ pressed }) => [s.manageItem, pressed && { opacity: 0.8 }]}>
+            <Text style={s.manageText}>{label}</Text>
+          </Pressable>
+        ))}
       </View>
 
       <Loaded state={state}>
@@ -323,28 +341,6 @@ function PaymentSettingsForm({ accounts, onSaved }: { accounts: PaymentAccount[]
   );
 }
 
-// ── A sheet that slides up from the bottom ────────────────────────
-
-function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={s.backdrop}>
-        <View style={s.sheet}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Text style={s.sheetTitle}>{title}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={s.close}>
-              <Icon name="close" size={14} color={colors.text2} strokeWidth={2.2} />
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={{ gap: 14 }} keyboardShouldPersistTaps="handled">
-            {children}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
 const s = StyleSheet.create({
   band: { backgroundColor: colors.navy, marginHorizontal: -16, marginTop: -16, paddingHorizontal: 20, paddingTop: 2, paddingBottom: 18, gap: 14 },
   bandText: { fontFamily: fonts.body, fontSize: 12, color: "rgba(247,243,236,0.78)" },
@@ -362,9 +358,8 @@ const s = StyleSheet.create({
   proofText: { fontFamily: fonts.body, fontSize: 12, color: colors.text2, flex: 1 },
   label: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.text2 },
   outcome: { fontFamily: fonts.bodySemi, fontSize: 13 },
+  manage: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  manageItem: { flexGrow: 1, flexBasis: "30%", minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: colors.line2, backgroundColor: colors.white, alignItems: "center", justifyContent: "center" },
+  manageText: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.navy },
   viewer: { flex: 1, backgroundColor: "rgba(10,20,35,0.92)", padding: 16, paddingTop: 48, gap: 12, justifyContent: "center" },
-  backdrop: { flex: 1, backgroundColor: "rgba(28,38,32,0.5)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: colors.ivory, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 28, gap: 14, maxHeight: "88%" },
-  sheetTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
-  close: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.ivory2, alignItems: "center", justifyContent: "center" },
 });

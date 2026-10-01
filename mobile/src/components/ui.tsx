@@ -104,7 +104,12 @@ export function Field({ label, ...input }: { label: string } & TextInputProps) {
   return (
     <View style={{ gap: 6 }}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput accessibilityLabel={label} placeholderTextColor="#8A909A" style={styles.input} {...input} />
+      <TextInput
+        accessibilityLabel={label}
+        placeholderTextColor="#8A909A"
+        style={[styles.input, input.multiline && { minHeight: 96, paddingTop: 12, textAlignVertical: "top" }]}
+        {...input}
+      />
     </View>
   );
 }

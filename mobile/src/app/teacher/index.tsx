@@ -1,6 +1,6 @@
 // Teacher Dashboard (prototype screen 4): pick a group, schedule classes,
 // mark attendance, and send each student written or voice feedback.
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Platform, Text, View } from "react-native";
 import { AccountButton } from "../../components/AccountMenu.tsx";
@@ -23,6 +23,7 @@ export default function TeacherHome() {
     <Screen onRefresh={groups.reload} refreshing={groups.loading && !!groups.data}>
       <Stack.Screen options={{ title: "Teacher Dashboard", headerRight: () => <AccountButton /> }} />
       <Greeting title={`Assalamu Alaikum, ${greetingName(user?.profile?.fullName)}`} text="Mark attendance and review today's class" />
+      <Button small variant="outline" label="Recorded lectures" onPress={() => router.push("/teacher/lectures")} />
       <Loaded state={groups}>
         {({ classGroups }) =>
           classGroups.length === 0 ? (

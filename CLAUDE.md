@@ -113,6 +113,10 @@ Logo: open book + pen in a gold sunburst circle badge.
 - `components/ui.tsx` shared pieces (`Screen`, `Card`, `Button`, `Chip`, `Field`, `Loaded`…), `Icon.tsx` (prototype
   line icons via react-native-svg), `PrivateImage.tsx` (payment screenshots — sends the login token).
 - Screens follow the prototype artboards (design canvas linked above); brand fonts via `@expo-google-fonts`.
+- Admin area: `app/admin/` (dashboard + courses, groups, teachers, students, certificate); forms open in a
+  `Sheet` (`components/Sheet.tsx`); temporary passwords via `components/TemporaryPassword.tsx` (shown once,
+  shared through the phone's share sheet). Confirmations: `Alert.alert` on phones, `window.confirm` in the web preview.
+- Screen tests use the fake backend in `src/test-helpers/fakeApi.ts` (set `responses`, check `writes()`).
 - The web preview (`npx expo export --platform web`) is only for testing in a browser; the product is the phone app.
 - Install packages with `EXPO_OFFLINE=1 npx expo install <pkg>` (picks SDK-matching versions).
 - Commands (inside `mobile/`): `npm start`, `npm test` (jest-expo), `npm run typecheck`.
