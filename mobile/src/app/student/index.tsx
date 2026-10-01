@@ -2,7 +2,7 @@
 // latest feedback, next class and what to do next.
 import { router, Stack } from "expo-router";
 import { Text, View } from "react-native";
-import { LogoutButton } from "../../components/AccountMenu.tsx";
+import { AccountButton } from "../../components/AccountMenu.tsx";
 import { Button, Card, Empty, Greeting, Loaded, Muted, Notice, Screen, SectionTitle, StatusPill, Title, styles } from "../../components/ui.tsx";
 import { api } from "../../lib/api.ts";
 import { formatDateTime, greetingName } from "../../lib/format.ts";
@@ -32,7 +32,7 @@ export default function StudentHome() {
 
   return (
     <Screen onRefresh={state.reload} refreshing={state.loading && !!state.data}>
-      <Stack.Screen options={{ title: "My Dashboard", headerRight: () => <LogoutButton /> }} />
+      <Stack.Screen options={{ title: "My Dashboard", headerRight: () => <AccountButton /> }} />
       <Greeting title={`Assalamu Alaikum, ${greetingName(user?.profile?.fullName)}`} text="Here is how your learning is going" />
       <Loaded state={state}>
         {({ enrollments, sessions, feedback, attendance }) => {
@@ -127,8 +127,12 @@ function CourseCard({ e, summary, nextClass, latest }: { e: Enrollment; summary?
 
       {e.status === "APPROVED" && (
         <>
-          <Muted small>Next class: {nextClass ? formatDateTime(nextClass.scheduledAt) : e.classGroup?.scheduleText ?? "to be announced"}</Muted>
-          <Button label="Join Live Class" onPress={() => router.push(`/student/live/${e.id}`)} />
+          {nextClass?.status === "LIVE" ? (
+            <Text style={{ fontFamily: fonts.bodyBold, color: colors.danger }}>● Live now</Text>
+          ) : (
+            <Muted small>Next class: {nextClass ? formatDateTime(nextClass.scheduledAt) : e.classGroup?.scheduleText ?? "to be announced"}</Muted>
+          )}
+          <Button label={nextClass?.status === "LIVE" ? "Join Live Class now" : "Join Live Class"} onPress={() => router.push(`/student/live/${e.id}`)} />
         </>
       )}
       {e.certificate && <Button variant="gold" label="View Certificate" onPress={() => router.push(`/student/certificate/${e.certificate!.certificateNumber}`)} />}

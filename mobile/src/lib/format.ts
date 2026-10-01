@@ -16,6 +16,11 @@ export function formatDateTime(iso: string) {
   });
 }
 
+// Just the time, e.g. "5:02 pm".
+export function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true });
+}
+
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }

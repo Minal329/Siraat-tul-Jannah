@@ -15,6 +15,7 @@ import {
 import * as adminService from "./enrollments.admin.service.ts";
 import { submitPaymentSchema } from "../payments/payments.schemas.ts";
 import * as paymentsService from "../payments/payments.service.ts";
+import { joinLiveSchema } from "../sessions/sessions.schemas.ts";
 import * as sessionsService from "../sessions/sessions.service.ts";
 import * as enrollmentsService from "./enrollments.service.ts";
 
@@ -39,6 +40,18 @@ enrollmentsRouter.get("/schedule", async (req, res) => {
 enrollmentsRouter.get("/:id/attendance", async (req, res) => {
   const id = parseId(req.params.id, "Enrollment");
   res.json({ data: await sessionsService.myAttendance(req.auth!.userId, id) });
+});
+
+// Is my class live right now? And "Join" — records it and returns the link to open.
+enrollmentsRouter.get("/:id/live", async (req, res) => {
+  const id = parseId(req.params.id, "Enrollment");
+  res.json({ data: await sessionsService.myLiveClass(req.auth!.userId, id) });
+});
+
+enrollmentsRouter.post("/:id/live/join", async (req, res) => {
+  const id = parseId(req.params.id, "Enrollment");
+  const input = joinLiveSchema.parse(req.body);
+  res.json({ data: await sessionsService.joinLiveClass(req.auth!.userId, id, input) });
 });
 
 enrollmentsRouter.post("/:id/cancel", async (req, res) => {

@@ -254,3 +254,54 @@ Studio and Xcode yourself and handle upgrades by hand.
 - **Tooling notes:** this sandbox's proxy blocks the Expo API, so packages were installed with
   `EXPO_OFFLINE=1 npx expo install`. `npm audit` reports moderate advisories in Expo's
   development tools (not in code shipped to phones); they're left until Expo updates them.
+
+## 027 — Live classes: open Zoom/WhatsApp in their own apps; the app tracks the class
+Teachers press **Start class** (up to an hour early) and **End class**. While a class is live,
+students see "Your class is live" (the apps check every 30 seconds) and one **Join** button
+that opens the Zoom app — or WhatsApp, if the teacher switched the class there because Zoom
+failed or connections are weak (with an optional note, e.g. "Zoom is down — join the call").
+- **Join = a hint, not attendance.** Pressing Join is recorded (first time only) and shown to
+  the teacher as "Joined 5:02 pm", with a one-tap "mark everyone who joined as Present". The
+  teacher still decides: someone can join and leave straight away.
+- **Only one live class per group**, enforced by a database index. Starting a new class ends one
+  the teacher forgot to end; a class left "live" for 6 hours stops showing as live.
+- **Zoom meetings can be created automatically** when the academy connects a Zoom
+  "Server-to-Server OAuth" app (`ZOOM_*` settings): one recurring meeting per class group, saved
+  with its link. Without it, admins paste meeting IDs by hand as before.
+- **Not built: Zoom inside our app (Zoom Meeting SDK).** It needs Zoom to approve our app for
+  the Marketplace, a custom native build (it can't run in Expo Go), and adds ~50 MB to the app.
+  Opening the Zoom app gives students the full, familiar Zoom experience and works on weak
+  connections just as well. **Revisit** if the academy needs recording or attendance straight
+  from Zoom's own data (Zoom webhooks could report exact join/leave times).
+
+## 028 — Security step: login cookie, password resets, production guards
+- **Website refresh token → httpOnly cookie.** Decision 025 kept it in localStorage, where any
+  injected script could steal a 30-day login. Now the API sets it as an httpOnly, SameSite=Strict
+  cookie limited to `/api/v1/auth`, and only reads it when the request carries the
+  `X-Auth-Transport: cookie` header (which other websites can't add). The phone app keeps using
+  secure storage. Existing website users are moved over on their next visit, without logging in again.
+  This works because the website and API are served from the same domain (see deployment, 029).
+- **Forgotten passwords: the admin issues a temporary password** (shown once, shared on WhatsApp),
+  and everyone can change their password on an Account page. **Alternative:** "reset by email"
+  links — standard, but needs an email service, and many students don't check email.
+- **`TRUST_PROXY` and production checks:** behind Caddy the API must trust one proxy so rate limits
+  see real visitors; the server refuses to start in production with http:// addresses.
+- Full checklist and accepted risks: `docs/security.md`.
+
+## 029 — Deployment: one server with Docker Compose (database + API + Caddy)
+The live site runs on one rented Linux server (VPS, ~$5–12/month) as three Docker containers:
+PostgreSQL, the API, and **Caddy**, which serves the website, forwards `/api/*` to the API, and gets
+HTTPS certificates automatically. Everything is in `deploy/` and documented step by step in
+`docs/deployment.md`.
+- **One domain for website and API**, so the login cookie (028) needs no cross-site settings and the
+  browser makes no extra CORS round trips.
+- **Migrations run automatically** on every start (a one-off `migrate` container) before the API starts.
+- **Nightly backups** of the database and uploaded files (`deploy/backup.sh`, tested by restoring into a
+  fresh database); the guide insists on keeping a copy off the server.
+- **Phone app** built in the cloud with Expo EAS (`mobile/eas.json`): an installable APK for testing,
+  then Play Store / App Store builds.
+- A **Deploy check** CI workflow builds both images on every PR so the server setup can't silently break.
+**Alternative:** a managed platform (Render, Railway, Fly.io) — no server to look after, but higher
+monthly cost, and uploaded files need paid persistent storage. Worth it if nobody can do the monthly
+`apt upgrade`; the Dockerfiles work there too.
+

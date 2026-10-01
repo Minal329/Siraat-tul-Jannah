@@ -123,7 +123,11 @@ function CourseCard({ enrollment: e, summary, nextClass, latestFeedback }: {
       {e.status === "APPROVED" && (
         <div className="stack" style={{ gap: 8 }}>
           <div className="small muted">
-            Next class: <strong style={{ color: "var(--text)" }}>{nextClass ? formatDateTime(nextClass.scheduledAt) : e.classGroup?.scheduleText ?? "to be announced"}</strong>
+            {nextClass?.status === "LIVE" ? (
+              <><span className="live-dot" aria-hidden /><strong style={{ color: "var(--danger)" }}>Live now</strong></>
+            ) : (
+              <>Next class: <strong style={{ color: "var(--text)" }}>{nextClass ? formatDateTime(nextClass.scheduledAt) : e.classGroup?.scheduleText ?? "to be announced"}</strong></>
+            )}
           </div>
           <div className="row">
             <Link to={`/student/live/${e.id}`} className="btn" style={{ flex: 1 }}>Join Live Class</Link>

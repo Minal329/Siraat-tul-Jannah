@@ -6,10 +6,15 @@ recorded lectures and certificates in one place.
 
 | Folder     | What it is                                   | Status            |
 |------------|----------------------------------------------|-------------------|
-| `backend/` | Node.js + Express API, PostgreSQL via Prisma | API steps 1–11 done |
-| `web/`     | React website (see `web/README.md`)          | All 9 screens     |
+| `backend/` | Node.js + Express API, PostgreSQL via Prisma | Complete (roadmap 1–15) |
+| `web/`     | React website (see `web/README.md`)          | All screens + live classes |
 | `mobile/`  | Expo app for students & teachers (see `mobile/README.md`) | Student + teacher screens |
-| `docs/`    | Decisions log and build roadmap              | —                 |
+| `deploy/`  | Live server setup: Docker Compose + Caddy + backups | Ready — see `docs/deployment.md` |
+| `docs/`    | Decisions log, roadmap, security checklist, deployment guide | — |
+
+## Going live
+Follow **`docs/deployment.md`** — one server, one command (`docker compose up -d --build`), HTTPS
+included, nightly backups, and the phone app built with Expo EAS. Read `docs/security.md` first.
 
 ## Running the backend locally
 Requires Node.js 20.19+ and PostgreSQL 14+.

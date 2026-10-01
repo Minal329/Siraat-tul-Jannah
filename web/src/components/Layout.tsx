@@ -45,6 +45,7 @@ export function Layout({ subtitle, greeting, children }: { subtitle: string; gre
                 {label}
               </NavLink>
             ))}
+            {user && <NavLink to="/account">Account</NavLink>}
             {user ? (
               <a
                 href="/login"

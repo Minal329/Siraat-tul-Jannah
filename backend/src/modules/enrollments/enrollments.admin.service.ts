@@ -15,7 +15,7 @@ import { getAdminId } from "../users/users.service.ts";
 const enrollmentNotFound = () => new AppError(404, "NOT_FOUND", "Enrollment not found.");
 
 const adminDetails = {
-  student: { select: { id: true, fullName: true, whatsappNumber: true, user: { select: { email: true } } } },
+  student: { select: { id: true, userId: true, fullName: true, whatsappNumber: true, user: { select: { email: true } } } },
   course: { select: { id: true, title: true, feePkr: true } },
   classGroup: { select: { id: true, name: true } },
   payments: { orderBy: { createdAt: "desc" } },
@@ -33,6 +33,7 @@ function toAdminEnrollment(enrollment: AdminEnrollment) {
     rejectionReason: enrollment.rejectionReason,
     student: {
       id: enrollment.student.id,
+      userId: enrollment.student.userId,
       fullName: enrollment.student.fullName,
       whatsappNumber: enrollment.student.whatsappNumber,
       email: enrollment.student.user.email,

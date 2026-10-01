@@ -171,3 +171,9 @@ select.input { max-width: 100%; text-overflow: ellipsis; }
   .stats { gap: 8px; }
   .certificate .cert-name { font-size: 28px; }
 }
+
+/* ── Live class ─────────────────────────────────────── */
+.live-banner { border: 2px solid var(--danger); background: var(--danger-bg); }
+.live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); margin-right: 6px; }
+.link-button { background: none; border: 0; padding: 0; color: var(--navy-2); text-decoration: underline; cursor: pointer; font: inherit; align-self: flex-start; }
+.link-button:disabled { opacity: 0.6; cursor: default; }

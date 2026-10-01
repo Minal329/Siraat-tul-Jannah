@@ -19,6 +19,15 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().min(1).default("uploads"),
   // The website's address, printed on certificates as the "verify this certificate" link.
   PUBLIC_WEB_URL: z.url().default("http://localhost:5173"),
+  // How many proxies (e.g. Caddy, a load balancer) sit in front of the API. Needed so
+  // rate limits see each visitor's real address instead of the proxy's. 0 = none (local).
+  TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
+  // Optional: lets admins create Zoom meetings from the dashboard. Comes from a
+  // "Server-to-Server OAuth" app in the academy's Zoom account (see docs/deployment.md).
+  // Leave all three empty to paste meeting IDs by hand instead.
+  ZOOM_ACCOUNT_ID: z.string().trim().optional().transform((v) => v || undefined),
+  ZOOM_CLIENT_ID: z.string().trim().optional().transform((v) => v || undefined),
+  ZOOM_CLIENT_SECRET: z.string().trim().optional().transform((v) => v || undefined),
   CORS_ORIGINS: z
     .string()
     .default("http://localhost:5173")
@@ -30,7 +39,23 @@ const envSchema = z.object({
     ),
 });
 
-const parsed = envSchema.safeParse(process.env);
+// Extra checks for the live server: settings that are fine on a laptop but unsafe in production.
+const productionSchema = envSchema.superRefine((value, ctx) => {
+  if (value.NODE_ENV !== "production") return;
+  if (!value.PUBLIC_WEB_URL.startsWith("https://")) {
+    ctx.addIssue({ code: "custom", path: ["PUBLIC_WEB_URL"], message: "must be the live website's https:// address in production" });
+  }
+  for (const origin of value.CORS_ORIGINS) {
+    if (!origin.startsWith("https://")) {
+      ctx.addIssue({ code: "custom", path: ["CORS_ORIGINS"], message: `${origin} — only https:// websites may call the API in production` });
+    }
+  }
+  if (value.BCRYPT_ROUNDS < 10) {
+    ctx.addIssue({ code: "custom", path: ["BCRYPT_ROUNDS"], message: "must be at least 10 in production" });
+  }
+});
+
+const parsed = productionSchema.safeParse(process.env);
 
 if (!parsed.success) {
   console.error("Invalid environment variables:");

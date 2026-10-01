@@ -12,6 +12,9 @@ import { createApiRouter } from "./routes/index.ts";
 
 export function createApp() {
   const app = express();
+  // Behind Caddy / a load balancer, trust its X-Forwarded-For so req.ip (used by rate limits) is the visitor's.
+  app.set("trust proxy", env.TRUST_PROXY);
+  app.disable("x-powered-by");
 
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));

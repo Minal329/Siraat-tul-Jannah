@@ -99,6 +99,7 @@ function EnrollmentRow({ enrollment: e, groups, onChange }: { enrollment: AdminE
             {payment && ` · ${METHOD_LABELS[payment.method]} PKR ${payment.amountPkr.toLocaleString()}`}
           </div>
           <div className="muted small">{e.student.email}{e.student.whatsappNumber ? ` · ${e.student.whatsappNumber}` : ""} · applied {formatDate(e.appliedAt)}</div>
+          <ResetPasswordButton userId={e.student.userId} name={e.student.fullName} />
         </div>
         {payment ? <StatusPill status={payment.status} /> : <span className="pill pill-bad">No payment</span>}
       </div>
@@ -302,17 +303,18 @@ function CoursesTab() {
 
 function GroupsTab() {
   const state = useLoad(async () => {
-    const [{ classGroups }, { courses }, { teachers }] = await Promise.all([
+    const [{ classGroups }, { courses }, { teachers }, { zoomConfigured }] = await Promise.all([
       api<{ classGroups: AdminClassGroup[] }>("/admin/class-groups"),
       api<{ courses: AdminCourse[] }>("/admin/courses"),
       api<{ teachers: TeacherSummary[] }>("/admin/teachers"),
+      api<{ zoomConfigured: boolean }>("/admin/class-groups/zoom-status"),
     ]);
-    return { classGroups, courses, teachers };
+    return { classGroups, courses, teachers, zoomConfigured };
   }, []);
 
   return (
     <Loaded state={state}>
-      {({ classGroups, courses, teachers }) => (
+      {({ classGroups, courses, teachers, zoomConfigured }) => (
         <>
           <NewGroupForm courses={courses} teachers={teachers.filter((t) => t.isActive)} onCreated={state.reload} />
           <div className="list">
@@ -328,12 +330,31 @@ function GroupsTab() {
                 <div className="muted small">
                   Zoom: {g.zoomMeetingId ?? "—"} · WhatsApp: {g.whatsappGroupLink ? "linked" : "—"}
                 </div>
+                {zoomConfigured && <CreateZoomMeeting group={g} onCreated={state.reload} />}
               </div>
             ))}
           </div>
         </>
       )}
     </Loaded>
+  );
+}
+
+// Only offered when the Zoom API is connected (see docs/deployment.md).
+function CreateZoomMeeting({ group, onCreated }: { group: AdminClassGroup; onCreated: () => void }) {
+  const { busy, error, run } = useAction();
+  async function create() {
+    if (group.zoomMeetingId && !window.confirm(`Replace ${group.name}'s Zoom meeting with a new one? Students will need the new link.`)) return;
+    const done = await run(() => api(`/admin/class-groups/${group.id}/zoom-meeting`, { method: "POST" }));
+    if (done) onCreated();
+  }
+  return (
+    <div className="row">
+      <button className="btn btn-small btn-outline" onClick={create} disabled={busy}>
+        {busy ? "Creating…" : group.zoomMeetingId ? "Create a new Zoom meeting" : "Create Zoom meeting"}
+      </button>
+      <ErrorMessage error={error} />
+    </div>
   );
 }
 
@@ -449,6 +470,7 @@ function TeachersTab() {
                 <div style={{ flex: 1 }}>
                   <strong>{t.fullName}</strong>
                   <div className="muted">{t.email} · {t.activeClassGroups} active group{t.activeClassGroups === 1 ? "" : "s"}</div>
+                  <ResetPasswordButton userId={t.userId} name={t.fullName} />
                 </div>
                 <button className={`btn btn-small ${t.isActive ? "btn-danger" : "btn-outline"}`} onClick={() => setActive(t, !t.isActive)}>
                   {t.isActive ? "Disable" : "Enable"}
@@ -458,6 +480,33 @@ function TeachersTab() {
           </div>
         )}
       </Loaded>
+    </>
+  );
+}
+
+// Forgotten password: the admin gets a temporary one to share privately (shown once).
+function ResetPasswordButton({ userId, name }: { userId: string; name: string }) {
+  const [temporary, setTemporary] = useState<string | null>(null);
+  const { busy, error, run } = useAction();
+
+  async function reset() {
+    if (!window.confirm(`Give ${name} a new temporary password? Their old password stops working and they're logged out everywhere.`)) return;
+    const result = await run(() => api<{ temporaryPassword: string }>(`/admin/users/${userId}/reset-password`, { method: "POST" }));
+    if (result) setTemporary(result.temporaryPassword);
+  }
+
+  if (temporary) {
+    return (
+      <div className="alert alert-ok small" role="status">
+        New temporary password for {name}: <strong style={{ fontFamily: "monospace" }}>{temporary}</strong>
+        <br />Share it privately — it won't be shown again. Ask them to change it after logging in.
+      </div>
+    );
+  }
+  return (
+    <>
+      <button className="link-button small" onClick={reset} disabled={busy}>{busy ? "Resetting…" : "Reset password"}</button>
+      <ErrorMessage error={error} />
     </>
   );
 }

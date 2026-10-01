@@ -6,6 +6,7 @@
 // that sends two requests at the same moment).
 import { Prisma } from "../../../generated/prisma/client.ts";
 import { prisma } from "../../lib/prisma.ts";
+import { zoomJoinLink } from "../../lib/zoom.ts";
 import { AppError } from "../../utils/AppError.ts";
 import { downloadUrl, verifyUrl } from "../certificates/certificates.service.ts";
 import { toPaymentSummary } from "../payments/payments.service.ts";
@@ -24,12 +25,6 @@ const enrollmentDetails = {
   payments: { orderBy: { createdAt: "desc" } },
 } as const;
 type EnrollmentWithDetails = Prisma.EnrollmentGetPayload<{ include: typeof enrollmentDetails }>;
-
-// "123 456 7890" → https://zoom.us/j/1234567890 (opens the Zoom app or browser).
-function zoomJoinUrl(meetingId: string | null) {
-  const digits = meetingId?.replace(/\D/g, "");
-  return digits ? `https://zoom.us/j/${digits}` : null;
-}
 
 function toStudentEnrollment(enrollment: EnrollmentWithDetails) {
   const group = enrollment.classGroup;
@@ -54,7 +49,7 @@ function toStudentEnrollment(enrollment: EnrollmentWithDetails) {
           whatsappGroupLink: isCurrent ? group.whatsappGroupLink : null,
           zoomMeetingId: isCurrent ? group.zoomMeetingId : null,
           zoomPasscode: isCurrent ? group.zoomPasscode : null,
-          zoomJoinUrl: isCurrent ? zoomJoinUrl(group.zoomMeetingId) : null,
+          zoomJoinUrl: isCurrent ? zoomJoinLink(group) : null,
         }
       : null,
     certificate: enrollment.certificate
