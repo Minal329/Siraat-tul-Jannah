@@ -5,11 +5,11 @@ standing brief: keep it short, true, and up to date.
 
 ## What this is
 Online Quran academy LMS for **Siraat tul Jannah** (founder: Hafiza Aqsa Jamil).
-Replaces WhatsApp-based class coordination. One codebase family:
+Replaces WhatsApp-based class coordination. **Mobile app only** — students, teachers and admins all
+use the app; there is no website (decision 030). One codebase family:
 - `backend/` — Node.js + Express 5 REST API in TypeScript, PostgreSQL via Prisma 7
-- `web/` — React 19 + Vite + TypeScript website (see `web/README.md` for screens and commands)
-- `mobile/` — Expo (React Native) app for students and teachers (see `mobile/README.md`)
-- `deploy/` — production: `docker-compose.yml` (db + migrate + api + Caddy), `Caddyfile`, `backup.sh`
+- `mobile/` — Expo (React Native) app for students, teachers and admins (see `mobile/README.md`)
+- `deploy/` — production: `docker-compose.yml` (db + migrate + api + Caddy in front of the API), `Caddyfile`, `backup.sh`
 - `docs/` — decisions log, roadmap, `security.md` checklist, `deployment.md` guide
 
 Clickable prototype (source of truth for screens/UX):
@@ -58,7 +58,7 @@ Logo: open book + pen in a gold sunburst circle badge.
   their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`,
   `/teacher/feedback` (send text/voice, list sent), `/feedback/mine`, `/feedback/:id/read`,
   `/feedback/:id/voice` (student, its teacher, or admin), `/lectures` (students), `/teacher/lectures`,
-  `/admin/certificates` (issue), `/certificates/verify/:number` (public), `/certificates/:number/pdf`,
+  `/admin/certificates` (issue),
   `/teacher/sessions/:id/start|live|end`, `/enrollments/:id/live` + `/live/join`,
   `/admin/class-groups/zoom-status`, `/admin/class-groups/:id/zoom-meeting`,
   `/admin/users/:id/reset-password` (students/teachers; temporary password shown once).
@@ -71,7 +71,8 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Lecture videos are links to a video service (YouTube unlisted / Vimeo / Bunny) — never uploaded to
   our server. `toEmbedUrl` turns YouTube/Vimeo links into in-app player URLs.
 - Certificates: numbers `STJ-<year>-<00001>-<4 random chars>`; the running number is assigned under a
-  Postgres advisory lock. PDFs are drawn on demand by `lib/certificatePdf.ts` (pdfkit + Fontsource fonts).
+  Postgres advisory lock. No PDF and no public verify page: the app draws the certificate
+  (`mobile/src/components/CertificateCard.tsx`) and saves/shares it as a PNG (`lib/saveImage.ts`).
   Staff-only endpoints go under `/admin/...`, the teacher's area under `/teacher/...`.
 - Teacher ownership: `loadGroupFor(auth, groupId)` in `sessions.service.ts` — another teacher's group
   answers 404. Reuse it for anything a teacher does to "their" class.
@@ -79,9 +80,9 @@ Logo: open book + pen in a gold sunburst circle badge.
   student may cancel PENDING. Approving needs a VERIFIED payment unless `approveWithoutPayment: true`.
 - Capacity checks lock the class group row (`SELECT … FOR UPDATE` inside `$transaction`) so
   simultaneous approvals can't overfill a group. Use the same pattern for any "last seat" check.
-- Website logins: requests with `X-Auth-Transport: cookie` get the refresh token as an httpOnly
-  SameSite=Strict cookie (path `/api/v1/auth`) instead of in the body; the mobile app uses the body.
-  `TRUST_PROXY` = number of proxies in front (Caddy = 1). Production refuses http:// URLs in env.
+- Logins: the refresh token travels in the response body; the app keeps it in secure storage.
+  `TRUST_PROXY` = number of proxies in front (Caddy = 1). `CORS_ORIGINS` only matters for the app's web
+  preview (`http://localhost:8081` locally, empty in production; production refuses http:// origins).
   Security checklist: `docs/security.md` — re-read it for anything touching logins, files or money.
 - Refresh tokens: `rotatedAt` is set only when swapped for a new one; only replaying a rotated
   token triggers "log out everywhere". Logout / password change / disabling just set `revokedAt`.
@@ -102,33 +103,25 @@ Logo: open book + pen in a gold sunburst circle badge.
   turns every error into `{ error: { code, message, details? } }`. Success = `{ data }`.
 - Local imports use the `.ts` extension (ESM + `rewriteRelativeImportExtensions`).
 
-## Web layout (`web/src/`)
-- `lib/api.ts` — every API call goes through `api()` / `apiFile()`: adds the token, renews an expired login
-  once (single-flight), turns errors into `ApiError`. Access token in memory; refresh token in an httpOnly
-  cookie (localStorage only holds a non-secret "logged in" flag).
-- `lib/useAuth.ts` (`useAuth`, `homeFor`) + `lib/auth.tsx` (`AuthProvider`); `lib/hooks.ts` (`useLoad`,
-  `useAction`, `usePrivateFileUrl`); `lib/types.ts` mirrors API responses; `lib/format.ts` money/dates.
-- `pages/*` one file per screen; `components/ui.tsx` shared pieces (`Loaded`, `Modal`, `PrivateImage`…).
-- Private files (screenshots, voice notes, PDFs) are fetched with the token (`apiFile`), never linked.
-- Styling: plain CSS in `styles.css`, brand colours as CSS variables; fonts bundled via Fontsource.
-- Must work at phone width (390px) with no sideways scrolling.
-- Commands (inside `web/`): `npm run dev`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
-
 ## Mobile layout (`mobile/src/`)
 - Expo SDK 57 + expo-router: every file in `app/` is a screen (`app/student/pay/[id].tsx` → `/student/pay/<id>`).
-- `lib/api.ts` follows the same rules as the web client; the refresh token lives in the phone's secure
-  storage (expo-secure-store; localStorage only in the web preview). `lib/types.ts` / `lib/format.ts` are
-  copies of the web ones — change both.
-- Admins are sent to the website (`app/admin-on-web.tsx`); the app covers students and teachers.
+- `lib/api.ts`: every API call goes through `api()` — adds the token, renews an expired login once
+  (single-flight), turns errors into `ApiError`; `friendlyMessage(err)` shows a field's own validation
+  message. Refresh token in the phone's secure storage (expo-secure-store; localStorage only in the web preview).
+- `lib/useAuth.ts` (`useAuth`, `homeFor`: STUDENT → `/student`, TEACHER → `/teacher`, ADMIN → `/admin`);
+  `lib/hooks.ts` (`useLoad` reloads on focus, `useAction`, `useInterval`); `lib/types.ts` mirrors API responses.
+- `components/ui.tsx` shared pieces (`Screen`, `Card`, `Button`, `Chip`, `Field`, `Loaded`…), `Icon.tsx` (prototype
+  line icons via react-native-svg), `PrivateImage.tsx` (payment screenshots — sends the login token).
+- Screens follow the prototype artboards (design canvas linked above); brand fonts via `@expo-google-fonts`.
+- The web preview (`npx expo export --platform web`) is only for testing in a browser; the product is the phone app.
 - Install packages with `EXPO_OFFLINE=1 npx expo install <pkg>` (picks SDK-matching versions).
 - Commands (inside `mobile/`): `npm start`, `npm test` (jest-expo), `npm run typecheck`.
 
 ## Deployment (`deploy/`, guide in `docs/deployment.md`)
-- One domain: Caddy serves the website (`web/Dockerfile`, built with `VITE_API_URL=/api/v1`) and proxies
-  `/api/*` to the API (`backend/Dockerfile`, target `runtime`; target `build` runs `prisma migrate deploy`).
+- Caddy gets HTTPS and proxies `/api/*` to the API (`backend/Dockerfile`, target `runtime`; target `build`
+  runs `prisma migrate deploy`). Anything else answers "please use the mobile app".
 - New API env vars must also be added to the `api` service in `deploy/docker-compose.yml` (and
-  `deploy/.env.example` if the owner sets them). The website's CSP lives in `deploy/Caddyfile` — a new
-  outside domain (video player, image host) must be allowed there.
+  `deploy/.env.example` if the owner sets them).
 - Admin on the server: `docker compose exec api node dist/src/scripts/create-admin.js --email … --name "…"`.
 - Building images in the Claude sandbox needs `--network host` and the sandbox CA — never add that to the Dockerfiles.
 
@@ -152,8 +145,8 @@ Logo: open book + pen in a gold sunburst circle badge.
 - Never commit secrets. New env vars go in `.env.example` with a placeholder.
 - Schema changes always go through a Prisma migration — never edit the DB by hand.
 - Every new endpoint gets tests in `backend/tests/`; run `npm test` and `npm run typecheck` before committing.
-- Web CI (`.github/workflows/web-ci.yml`): lint → typecheck → tests → build. Mobile CI: typecheck → tests →
-  web export. Deploy check: validates `deploy/docker-compose.yml` and builds both Docker images.
+- Mobile CI: typecheck → tests → web export. Deploy check: validates `deploy/docker-compose.yml` and
+  builds the API Docker image.
 - `backend/tests/journey.test.ts` walks the whole academy flow through the API — keep it passing when
   changing any step of it.
 - CI (`.github/workflows/backend-ci.yml`) runs on every PR: install → prisma generate →

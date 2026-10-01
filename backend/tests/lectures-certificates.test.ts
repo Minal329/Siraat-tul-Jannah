@@ -135,7 +135,7 @@ describe("certificates", () => {
     expect(res.status).toBe(201);
     const year = new Date().getUTCFullYear();
     expect(res.body.data.certificate.certificateNumber).toMatch(new RegExp(`^STJ-${year}-00001-[A-Z2-9]{4}$`));
-    expect(res.body.data.certificate.verifyUrl).toContain(`/verify/${res.body.data.certificate.certificateNumber}`);
+    expect(res.body.data.certificate).toEqual({ certificateNumber: expect.any(String), issuedAt: expect.any(String) });
   });
 
   it("only for completed courses, and only once", async () => {
@@ -161,45 +161,27 @@ describe("certificates", () => {
     expect(runningNumbers).toEqual(["00001", "00002", "00003", "00004"]);
   });
 
-  it("anyone can verify a certificate by its full number, but not by guessing the running number", async () => {
+  it("shows the certificate's number and date in the student's courses (the app draws the image)", async () => {
     const { adminAuth, hira } = await completed();
     const { certificateNumber } = (await issue(adminAuth, hira.enrollment.id)).body.data.certificate;
-
-    const ok = await request(app).get(`/api/v1/certificates/verify/${certificateNumber.toLowerCase()}`);
-    const guessed = await request(app).get(`/api/v1/certificates/verify/${certificateNumber.slice(0, -4)}AAAA`);
-
-    expect(ok.status).toBe(200);
-    expect(ok.body.data.certificate).toEqual({
-      certificateNumber, studentName: "Hira Malik", courseTitle: "Tajweed", issuedAt: expect.any(String),
-    });
-    expect(guessed.status).toBe(404);
-  });
-
-  it("the student downloads their certificate as a PDF; other students can't", async () => {
-    const { adminAuth, hira, sana } = await completed();
-    const { certificateNumber } = (await issue(adminAuth, hira.enrollment.id)).body.data.certificate;
-    const url = `/api/v1/certificates/${certificateNumber}/pdf`;
-
-    const mine = await request(app).get(url).set("Authorization", hira.auth).buffer(true);
-    const theirs = await request(app).get(url).set("Authorization", sana.auth);
-
-    expect(mine.status).toBe(200);
-    expect(mine.headers["content-type"]).toBe("application/pdf");
-    expect(mine.headers["content-disposition"]).toContain("attachment");
-    expect(Buffer.from(mine.body).subarray(0, 5).toString()).toBe("%PDF-");
-    expect(theirs.status).toBe(404);
-  });
-
-  it("shows the certificate with download and verify links in the student's courses", async () => {
-    const { adminAuth, hira } = await completed();
-    await issue(adminAuth, hira.enrollment.id);
 
     const mine = await request(app).get("/api/v1/enrollments/mine").set("Authorization", hira.auth);
 
-    expect(mine.body.data.enrollments[0].certificate).toMatchObject({
-      downloadUrl: expect.stringMatching(/^\/api\/v1\/certificates\/STJ-.+\/pdf$/),
-      verifyUrl: expect.stringContaining("/verify/STJ-"),
+    expect(mine.body.data.enrollments[0]).toMatchObject({
+      course: { title: "Tajweed" },
+      certificate: { certificateNumber, issuedAt: expect.any(String) },
     });
+    expect(Object.keys(mine.body.data.enrollments[0].certificate).sort()).toEqual(["certificateNumber", "issuedAt"]);
+  });
+
+  it("there is no public verification page or PDF any more", async () => {
+    const { adminAuth, hira } = await completed();
+    const { certificateNumber } = (await issue(adminAuth, hira.enrollment.id)).body.data.certificate;
+
+    const verify = await request(app).get(`/api/v1/certificates/verify/${certificateNumber}`);
+    const pdf = await request(app).get(`/api/v1/certificates/${certificateNumber}/pdf`).set("Authorization", hira.auth);
+
+    expect([verify.status, pdf.status]).toEqual([404, 404]);
   });
 
   it("issuing is admin-only", async () => {

@@ -17,7 +17,7 @@ export function createApp() {
   app.disable("x-powered-by");
 
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
+  app.use(cors({ origin: env.CORS_ORIGINS }));
   app.use(express.json({ limit: "1mb" }));
   if (env.NODE_ENV !== "test") {
     app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));

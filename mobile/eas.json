@@ -6,17 +6,17 @@
   "build": {
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://siraattuljannah.com/api/v1",
-        "EXPO_PUBLIC_WEB_URL": "https://siraattuljannah.com"
+        "EXPO_PUBLIC_API_URL": "https://siraattuljannah.com/api/v1"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://siraattuljannah.com/api/v1",
-        "EXPO_PUBLIC_WEB_URL": "https://siraattuljannah.com"
+        "EXPO_PUBLIC_API_URL": "https://siraattuljannah.com/api/v1"
       }
     }
   },

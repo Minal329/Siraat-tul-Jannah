@@ -150,11 +150,13 @@ describe("a student's whole journey", () => {
     const { certificate } = ok(await request(app).post("/api/v1/admin/certificates").set("Authorization", admin).send({ enrollmentId: enrollment.id }), 201);
     expect(certificate.certificateNumber).toMatch(/^STJ-\d{4}-00001-[A-Z0-9]{4}$/);
 
-    const verified = ok(await request(app).get(`/api/v1/certificates/verify/${certificate.certificateNumber}`));
-    expect(verified.certificate).toMatchObject({ studentName: "Ayesha Khan", courseTitle: "Noorani Qaida" });
-
-    const pdf = await request(app).get(`/api/v1/certificates/${certificate.certificateNumber}/pdf`).set("Authorization", student);
-    expect([pdf.status, pdf.headers["content-type"]]).toEqual([200, "application/pdf"]);
+    // The app draws the certificate image from her course and certificate details.
+    const finished = ok(await request(app).get("/api/v1/enrollments/mine").set("Authorization", student));
+    expect(finished.enrollments[0]).toMatchObject({
+      status: "COMPLETED",
+      course: { title: "Noorani Qaida" },
+      certificate: { certificateNumber: certificate.certificateNumber },
+    });
 
     // Finished: she can enroll in the same course again later (e.g. a revision batch).
     ok(await request(app).post("/api/v1/enrollments").set("Authorization", student).send({ courseId: course.id }), 201);

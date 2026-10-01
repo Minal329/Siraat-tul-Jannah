@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Teachers record voice feedback on students' recitation.",
-        "NSPhotoLibraryUsageDescription": "Choose a screenshot of your fee payment to upload."
+        "NSPhotoLibraryUsageDescription": "Choose a screenshot of your fee payment to upload.",
+        "NSPhotoLibraryAddUsageDescription": "Save your certificate to your photos."
       }
     },
     "android": {
@@ -48,6 +49,15 @@
           "backgroundColor": "#0B2A4A",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 120
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Save your certificate to your photos.",
+          "savePhotosPermission": "Save your certificate to your photos.",
+          "isAccessMediaLocationEnabled": false
         }
       ]
     ],

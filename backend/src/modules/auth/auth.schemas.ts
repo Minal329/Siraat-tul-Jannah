@@ -32,9 +32,8 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Enter your password."),
 });
 
-// The mobile app sends the refresh token in the body; the website's is in a cookie instead.
 export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1).optional(),
+  refreshToken: z.string().min(1),
 });
 
 export const changePasswordSchema = z.object({

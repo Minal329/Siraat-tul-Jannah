@@ -1,34 +1,21 @@
-# Caddy: the front door of the live site.
+# Caddy: the front door of the live server.
 # - Gets and renews the HTTPS certificate for DOMAIN automatically (Let's Encrypt).
-# - /api/* goes to the API container; everything else is the website.
-# - Adds security headers to the website's pages.
+# - /api/* goes to the API container. There is no website: everyone uses the mobile app.
 
 {$DOMAIN} {
 	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
 
 	handle /api/* {
 		reverse_proxy api:4000
 	}
 
 	handle {
-		root * /srv
-		# The website is a single-page app: unknown paths load index.html.
-		try_files {path} /index.html
-		file_server
-
-		header {
-			Strict-Transport-Security "max-age=31536000; includeSubDomains"
-			X-Content-Type-Options "nosniff"
-			Referrer-Policy "strict-origin-when-cross-origin"
-			Permissions-Policy "camera=(), geolocation=(), microphone=(self)"
-			# Only our own files, plus YouTube/Vimeo players for recorded lectures.
-			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
-			-Server
-		}
-		# index.html must never be cached (it points to the latest build); hashed assets can be, forever.
-		@assets path /assets/*
-		header @assets Cache-Control "public, max-age=31536000, immutable"
-		@html not path /assets/*
-		header @html Cache-Control "no-cache"
+		respond "Siraat tul Jannah — please use the mobile app." 404
 	}
 }

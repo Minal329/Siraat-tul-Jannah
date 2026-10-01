@@ -13,10 +13,10 @@ Re-read this list whenever a feature touches logins, files, money or children's 
 | Access tokens: 15 min, HS256 pinned, issuer checked | ✅ |
 | Refresh tokens: random 256-bit, stored hashed, rotated on every use; replaying an old one logs out everywhere | ✅ |
 | Disabled account / changed role takes effect on the next request | ✅ |
-| **Website refresh token moved to an httpOnly, SameSite=Strict cookie** (was localStorage) | ✅ fixed in step 15 |
-| Cookie only read when the request has the `X-Auth-Transport: cookie` header (blocks cross-site requests) | ✅ fixed in step 15 |
+| Refresh token kept in the phone's secure storage (iOS Keychain / Android Keystore) | ✅ |
+| No website, so no browser cookies or cross-site request risks (decision 030) | ✅ |
 | **Forgotten password: admin issues a temporary password**; old sessions logged out | ✅ added in step 15 |
-| **Change-password screen** on the website and app (teachers' temporary passwords can be replaced) | ✅ added in step 15 |
+| **Change-password screen** in the app (teachers' temporary passwords can be replaced) | ✅ added in step 15 |
 | Public signup can only create students | ✅ |
 
 ## Data access
@@ -40,7 +40,7 @@ Re-read this list whenever a feature touches logins, files, money or children's 
 | Check | Status |
 |---|---|
 | Security headers (helmet: HSTS, nosniff, frame-ancestors…); `X-Powered-By` removed | ✅ |
-| Website security headers incl. a Content-Security-Policy — set by Caddy (`deploy/Caddyfile`) | ✅ added in step 15 |
+| Only `/api/*` is served; Caddy adds HSTS and hides its version | ✅ |
 | JSON bodies limited to 1 MB | ✅ |
 | Errors never send stack traces or SQL to users | ✅ |
 | **`TRUST_PROXY`** so rate limits see real visitors behind Caddy | ✅ fixed in step 15 |

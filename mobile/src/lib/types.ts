@@ -1,4 +1,4 @@
-// Shapes of the data the API sends back. Kept in step with web/src/lib/types.ts.
+// Shapes of the data the API sends back (see backend/src/modules/*/…service.ts).
 
 export type Role = "STUDENT" | "TEACHER" | "ADMIN";
 
@@ -58,7 +58,7 @@ export type Enrollment = {
     zoomPasscode: string | null;
     zoomJoinUrl: string | null;
   } | null;
-  certificate: { certificateNumber: string; issuedAt: string; downloadUrl: string; verifyUrl: string } | null;
+  certificate: { certificateNumber: string; issuedAt: string } | null;
   payments: Payment[];
 };
 
@@ -139,6 +139,7 @@ export type AdminEnrollment = {
   id: string;
   status: EnrollmentStatus;
   appliedAt: string;
+  approvedAt: string | null;
   rejectionReason: string | null;
   student: { id: string; userId: string; fullName: string; whatsappNumber: string | null; email: string };
   course: { id: string; title: string; feePkr: number };

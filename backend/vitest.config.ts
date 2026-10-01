@@ -18,6 +18,7 @@ export default defineConfig({
       NODE_ENV: "test",
       DATABASE_URL: testDatabaseUrl,
       JWT_SECRET: "test-only-secret-that-is-at-least-32-characters",
+      CORS_ORIGINS: "http://localhost:8081",
       BCRYPT_ROUNDS: "4",
       UPLOAD_DIR: testUploadDir,
     },

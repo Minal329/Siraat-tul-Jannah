@@ -1,4 +1,4 @@
-// Talks to the backend API — the same rules as the website's client (web/src/lib/api.ts):
+// Talks to the backend API:
 // adds the login token, renews an expired login once and retries, and turns
 // { error: { code, message } } into an ApiError you can show.
 //

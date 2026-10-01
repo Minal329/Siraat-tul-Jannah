@@ -1,4 +1,4 @@
-// Siraat tul Jannah brand — the same colours as the website (web/src/styles.css).
+// Siraat tul Jannah brand colours and fonts (see CLAUDE.md, "Brand").
 export const colors = {
   navy: "#0B2A4A",
   navy2: "#1B3A63",

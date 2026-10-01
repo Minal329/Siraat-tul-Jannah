@@ -19,67 +19,13 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const COOKIE_MODE = { "X-Auth-Transport": "cookie" };
-const refreshCookie = (res: request.Response) =>
-  ([] as string[]).concat(res.headers["set-cookie"] ?? []).find((c) => c.startsWith("stj_refresh="));
-const cookieValue = (setCookie: string) => setCookie.split(";")[0]; // "stj_refresh=…"
-
-describe("website login: refresh token in an httpOnly cookie", () => {
-  it("puts the refresh token in a locked-down cookie instead of the response", async () => {
-    const user = await createUser({});
-    const res = await request(app).post("/api/v1/auth/login").set(COOKIE_MODE).send({ email: user.email, password: user.password });
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.tokens.accessToken).toEqual(expect.any(String));
-    expect(res.body.data.tokens).not.toHaveProperty("refreshToken");
-    const cookie = refreshCookie(res)!;
-    expect(cookie).toMatch(/HttpOnly/i);
-    expect(cookie).toMatch(/SameSite=Strict/i);
-    expect(cookie).toMatch(/Path=\/api\/v1\/auth/);
-    expect(cookie).toMatch(/Max-Age=2592000/); // 30 days
-  });
-
-  it("renews with the cookie, rotating it", async () => {
-    const user = await createUser({});
-    const login = await request(app).post("/api/v1/auth/login").set(COOKIE_MODE).send({ email: user.email, password: user.password });
-
-    const renewed = await request(app).post("/api/v1/auth/refresh").set(COOKIE_MODE).set("Cookie", cookieValue(refreshCookie(login)!));
-
-    expect(renewed.status).toBe(200);
-    expect(renewed.body.data.tokens.accessToken).toEqual(expect.any(String));
-    expect(renewed.body.data.tokens).not.toHaveProperty("refreshToken");
-    expect(cookieValue(refreshCookie(renewed)!)).not.toBe(cookieValue(refreshCookie(login)!));
-  });
-
-  it("ignores the cookie unless the request carries the custom header (other websites can't add it)", async () => {
-    const user = await createUser({});
-    const login = await request(app).post("/api/v1/auth/login").set(COOKIE_MODE).send({ email: user.email, password: user.password });
-
-    const res = await request(app).post("/api/v1/auth/refresh").set("Cookie", cookieValue(refreshCookie(login)!));
-
-    expect(res.status).toBe(401);
-  });
-
-  it("logout revokes the token and clears the cookie", async () => {
-    const user = await createUser({});
-    const login = await request(app).post("/api/v1/auth/login").set(COOKIE_MODE).send({ email: user.email, password: user.password });
-    const cookie = cookieValue(refreshCookie(login)!);
-
-    const logout = await request(app).post("/api/v1/auth/logout").set(COOKIE_MODE).set("Cookie", cookie);
-    const reuse = await request(app).post("/api/v1/auth/refresh").set(COOKIE_MODE).set("Cookie", cookie);
-
-    expect(logout.status).toBe(204);
-    expect(refreshCookie(logout)).toMatch(/stj_refresh=;/);
-    expect(reuse.status).toBe(401);
-    expect(refreshCookie(reuse)).toMatch(/stj_refresh=;/); // a refused renewal also clears it
-  });
-
-  it("the mobile app's way is unchanged: token in the body, no cookie", async () => {
+describe("logins: refresh token in the response body", () => {
+  it("returns the token in the body and never sets a cookie", async () => {
     const user = await createUser({});
     const res = await request(app).post("/api/v1/auth/login").send({ email: user.email, password: user.password });
 
     expect(res.body.data.tokens.refreshToken).toEqual(expect.any(String));
-    expect(refreshCookie(res)).toBeUndefined();
+    expect(res.headers["set-cookie"]).toBeUndefined();
   });
 });
 
@@ -179,15 +125,15 @@ describe("production settings", () => {
       (err: { stderr: string }) => ({ ok: false, output: err.stderr }),
     );
 
-  it("refuses to start with local (http) addresses in production", async () => {
-    const result = await startWith({ PUBLIC_WEB_URL: "http://localhost:5173", CORS_ORIGINS: "http://localhost:5173" });
+  it("refuses to start with an http:// browser origin or weak password hashing in production", async () => {
+    const result = await startWith({ CORS_ORIGINS: "http://localhost:8081", BCRYPT_ROUNDS: "4" });
     expect(result.ok).toBe(false);
-    expect(result.output).toContain("PUBLIC_WEB_URL");
     expect(result.output).toContain("CORS_ORIGINS");
+    expect(result.output).toContain("BCRYPT_ROUNDS");
   }, 20_000);
 
-  it("starts with https addresses", async () => {
-    const result = await startWith({ PUBLIC_WEB_URL: "https://siraattuljannah.com", CORS_ORIGINS: "https://siraattuljannah.com" });
+  it("starts with no browser origins (the phone app doesn't need any)", async () => {
+    const result = await startWith({ CORS_ORIGINS: "" });
     expect(result).toEqual({ ok: true, output: "" });
   }, 20_000);
 });
