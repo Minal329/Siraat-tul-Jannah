@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { api, ApiError, tokenStore } from "../api.ts";
+import { api, ApiError, friendlyMessage, tokenStore } from "../api.ts";
 
 // Pretend secure storage (the real one needs a phone).
 const mockStore = new Map<string, string>();
@@ -92,5 +92,20 @@ describe("api()", () => {
   it("explains network failures in plain words", async () => {
     fetchMock.mockRejectedValue(new TypeError("Network request failed"));
     await expect(api("/courses")).rejects.toMatchObject({ code: "NETWORK_ERROR" });
+  });
+});
+
+describe("friendlyMessage()", () => {
+  it("shows the first field problem for validation errors", () => {
+    const err = new ApiError(400, "VALIDATION_ERROR", "Some fields are missing or invalid.", [
+      { field: "password", message: "Password must be at least 8 characters." },
+    ]);
+    expect(friendlyMessage(err)).toBe("Password must be at least 8 characters.");
+  });
+
+  it("otherwise shows the error's own message", () => {
+    expect(friendlyMessage(new ApiError(409, "EMAIL_TAKEN", "An account with this email already exists."))).toBe(
+      "An account with this email already exists.",
+    );
   });
 });

@@ -1,7 +1,7 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { AppState } from "react-native";
-import type { ApiError } from "./api.ts";
+import { friendlyMessage, type ApiError } from "./api.ts";
 
 // Loads a screen's data each time the screen comes into view (so going back
 // to a list shows fresh data). Pull-to-refresh calls `reload`.
@@ -58,7 +58,7 @@ export function useAction() {
     try {
       return await action();
     } catch (err) {
-      setError((err as Error).message);
+      setError(friendlyMessage(err));
       return undefined;
     } finally {
       setBusy(false);
