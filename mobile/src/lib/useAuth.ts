@@ -18,7 +18,7 @@ export function useAuth() {
   return auth;
 }
 
-// The app is for students and teachers; admins use the website.
+// Each role's home screen.
 export function homeFor(role: Role) {
-  return role === "TEACHER" ? "/teacher" : role === "STUDENT" ? "/student" : "/admin-on-web";
+  return role === "TEACHER" ? "/teacher" : role === "STUDENT" ? "/student" : "/admin";
 }

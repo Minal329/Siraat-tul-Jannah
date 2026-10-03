@@ -8,7 +8,6 @@ import { Prisma } from "../../../generated/prisma/client.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { zoomJoinLink } from "../../lib/zoom.ts";
 import { AppError } from "../../utils/AppError.ts";
-import { downloadUrl, verifyUrl } from "../certificates/certificates.service.ts";
 import { toPaymentSummary } from "../payments/payments.service.ts";
 import { getStudentId } from "../users/users.service.ts";
 
@@ -52,13 +51,7 @@ function toStudentEnrollment(enrollment: EnrollmentWithDetails) {
           zoomJoinUrl: isCurrent ? zoomJoinLink(group) : null,
         }
       : null,
-    certificate: enrollment.certificate
-      ? {
-          ...enrollment.certificate,
-          downloadUrl: downloadUrl(enrollment.certificate.certificateNumber),
-          verifyUrl: verifyUrl(enrollment.certificate.certificateNumber),
-        }
-      : null,
+    certificate: enrollment.certificate,
     payments: enrollment.payments.map(toPaymentSummary),
   };
 }

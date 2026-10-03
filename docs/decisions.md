@@ -305,3 +305,15 @@ HTTPS certificates automatically. Everything is in `deploy/` and documented step
 monthly cost, and uploaded files need paid persistent storage. Worth it if nobody can do the monthly
 `apt upgrade`; the Dockerfiles work there too.
 
+## 030 — Mobile app only: no website, certificates as images in the app
+Students, teachers **and admins** all use the Expo app; the React website (025) is removed. Admin work
+(approving applications, checking payment screenshots, payment numbers — then courses, groups and
+teachers) moves into the app, following the prototype's Admin Dashboard.
+- **Certificates are PNG images made in the app** (prototype's "Save Image" and "Share"): the app draws
+  the certificate and saves it to the phone's photos or shares it (e.g. WhatsApp). The PDF, its fonts
+  and the public verification page/endpoint are gone. **Trade-off:** nobody outside the academy can
+  check a certificate online; the certificate number still identifies it if someone asks the academy.
+- **Login cookie (028) removed** with the website; the app keeps its refresh token in secure storage.
+- **Server:** Caddy now only provides HTTPS for the API (`/api/*`).
+**Alternative:** keep a tiny website just for certificate verification — rejected by the owner as not needed.
+

@@ -55,7 +55,14 @@ export function SectionTitle({ children }: { children: ReactNode }) {
 }
 
 type ButtonVariant = "primary" | "gold" | "outline" | "danger";
-export function Button({ label, onPress, variant = "primary", disabled, small }: { label: string; onPress: () => void; variant?: ButtonVariant; disabled?: boolean; small?: boolean }) {
+export function Button({ label, onPress, variant = "primary", disabled, small, large }: {
+  label: string;
+  onPress: () => void;
+  variant?: ButtonVariant;
+  disabled?: boolean;
+  small?: boolean;
+  large?: boolean; // the main action of a screen, e.g. "Log In"
+}) {
   const palette = {
     primary: { bg: colors.navy, fg: colors.ivory, border: colors.navy },
     gold: { bg: colors.gold, fg: colors.ivory, border: colors.gold },
@@ -71,10 +78,11 @@ export function Button({ label, onPress, variant = "primary", disabled, small }:
       style={({ pressed }) => [
         styles.button,
         small && { minHeight: 38, paddingHorizontal: 12 },
+        large && { minHeight: 52, borderRadius: 12 },
         { backgroundColor: palette.bg, borderColor: palette.border, opacity: disabled ? 0.55 : pressed ? 0.85 : 1 },
       ]}
     >
-      <Text style={[styles.buttonText, { color: palette.fg }, small && { fontSize: 13 }]}>{label}</Text>
+      <Text style={[styles.buttonText, { color: palette.fg }, small && { fontSize: 13 }, large && { fontSize: 15 }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -96,7 +104,12 @@ export function Field({ label, ...input }: { label: string } & TextInputProps) {
   return (
     <View style={{ gap: 6 }}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput accessibilityLabel={label} placeholderTextColor="#8A909A" style={styles.input} {...input} />
+      <TextInput
+        accessibilityLabel={label}
+        placeholderTextColor="#8A909A"
+        style={[styles.input, input.multiline && { minHeight: 96, paddingTop: 12, textAlignVertical: "top" }]}
+        {...input}
+      />
     </View>
   );
 }

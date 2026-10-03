@@ -64,13 +64,13 @@ describe("security", () => {
     expect(res.headers["x-powered-by"]).toBeUndefined();
   });
 
-  it("allows the configured web app origin and ignores others", async () => {
+  it("allows the configured browser origin (the app's web preview) and ignores others", async () => {
     queryRaw.mockResolvedValue([]);
 
-    const allowed = await request(app).get("/api/v1/health").set("Origin", "http://localhost:5173");
+    const allowed = await request(app).get("/api/v1/health").set("Origin", "http://localhost:8081");
     const other = await request(app).get("/api/v1/health").set("Origin", "https://evil.example");
 
-    expect(allowed.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    expect(allowed.headers["access-control-allow-origin"]).toBe("http://localhost:8081");
     expect(other.headers["access-control-allow-origin"]).toBeUndefined();
   });
 });

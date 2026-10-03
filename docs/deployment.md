@@ -1,17 +1,17 @@
 # Putting Siraat tul Jannah online
 
-This guide takes the academy from "runs on my laptop" to a live website at your own
-domain, plus the Android/iPhone app. Follow it top to bottom the first time; later
+This guide takes the academy from "runs on my laptop" to a live server at your own
+domain, plus the Android/iPhone app (the only way students, teachers and admins use it). Follow it top to bottom the first time; later
 updates are one command (section 8).
 
 **What runs where:** one small rented server runs three pieces, each in its own Docker container:
 
 ```
- visitors ──https──▶  Caddy (web)  ──/api/*──▶  API (Node)  ──▶  PostgreSQL (db)
-                      website files               uploads folder
+ the app ──https──▶  Caddy  ──/api/*──▶  API (Node)  ──▶  PostgreSQL (db)
+                                          uploads folder
 ```
 
-- **Caddy** shows the website and gets the HTTPS padlock certificate automatically.
+- **Caddy** gets the HTTPS padlock certificate automatically and passes requests to the API.
 - **API** is the backend; it keeps uploaded screenshots and voice notes in a private folder.
 - **PostgreSQL** is the database.
 - The phone app talks to the same address (`https://your-domain/api/v1`).
@@ -43,7 +43,7 @@ Log in with the details your VPS provider gave you, then run each line:
 ```bash
 ssh root@YOUR_SERVER_IP
 
-# Updates and a firewall that only allows SSH and the website
+# Updates and a firewall that only allows SSH and HTTPS
 apt update && apt upgrade -y
 ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw --force enable
 
@@ -72,11 +72,11 @@ In `.env`:
 ```bash
 cd /opt/siraat/deploy
 docker compose up -d --build
-docker compose ps        # db, api and web "Up"; migrate "Exited (0)" (it ran the database setup)
+docker compose ps        # db, api and caddy "Up"; migrate "Exited (0)" (it ran the database setup)
 ```
 
-The first build takes a few minutes. Then open `https://your-domain` — you should see the course catalog
-with a padlock in the address bar. If not, see Troubleshooting.
+The first build takes a few minutes. Then open `https://your-domain/api/v1/health` in a browser — you
+should see `"status":"ok"` with a padlock in the address bar. If not, see Troubleshooting.
 
 ## 6. Create the first admin (the owner's account)
 ```bash
@@ -84,11 +84,11 @@ cd /opt/siraat/deploy
 docker compose exec api node dist/src/scripts/create-admin.js --email you@example.com --name "Hafiza Aqsa Jamil"
 ```
 A strong password is generated and **printed once** — save it in a password manager, log in, and
-change it on the **Account** page if you like. Then, in the admin dashboard:
-1. **Payment accounts** — add the Easypaisa / JazzCash / bank details students pay to.
-2. **Courses** — add each course (tick "Publish now" when it should appear in the catalog).
-3. **Teachers** — create each teacher's account; share their temporary password privately on WhatsApp.
-4. **Class groups** — create each batch with its teacher, Zoom meeting and WhatsApp group link.
+change it on the **Account** page if you like. Then, log in to the **app** as the admin:
+1. **Payment accounts** — the ⚙ on the admin dashboard: the Easypaisa / JazzCash numbers students pay to.
+2. **Courses** — add each course (tick "Show in the catalog" when it should appear).
+3. **Teachers** — add each teacher; send the temporary password privately with the share button.
+4. **Groups** — create each batch with its teacher, schedule, Zoom meeting and WhatsApp group link.
 
 ## 7. Backups (do this on day one)
 The database and the uploaded files (payment screenshots, voice notes) can't be re-created, so back them up
@@ -162,11 +162,10 @@ payment screenshots, voice notes, attendance), why, who sees it, and how to ask 
 ## Troubleshooting
 | Problem | What to check |
 |---|---|
-| No padlock / "connection refused" | DNS points to the right IP? `ufw status` shows 80 and 443? `docker compose logs web` |
+| No padlock / "connection refused" | DNS points to the right IP? `ufw status` shows 80 and 443? `docker compose logs caddy` |
 | "Bad gateway" (502) | The API isn't running: `docker compose ps`, then `docker compose logs api` |
 | API exits right after starting | `docker compose logs api` — a missing or invalid setting is named there |
 | `migrate` didn't exit with 0 | `docker compose logs migrate` |
-| Logged out after every reload | You must open the site with `https://` and the exact `DOMAIN` from `.env` |
-| Phone app can't connect | The domain in `mobile/eas.json` must match, and the site must work in the phone's browser |
+| Phone app can't connect | The domain in `mobile/eas.json` must match, and `https://your-domain/api/v1/health` must open in the phone's browser |
 
 See also: `docs/security.md` (checklist before going live).

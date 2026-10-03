@@ -17,8 +17,6 @@ const envSchema = z.object({
   // Folder for uploaded files (payment screenshots etc.), relative to backend/.
   // Must be kept private and backed up — it holds students' financial details.
   UPLOAD_DIR: z.string().min(1).default("uploads"),
-  // The website's address, printed on certificates as the "verify this certificate" link.
-  PUBLIC_WEB_URL: z.url().default("http://localhost:5173"),
   // How many proxies (e.g. Caddy, a load balancer) sit in front of the API. Needed so
   // rate limits see each visitor's real address instead of the proxy's. 0 = none (local).
   TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
@@ -28,9 +26,12 @@ const envSchema = z.object({
   ZOOM_ACCOUNT_ID: z.string().trim().optional().transform((v) => v || undefined),
   ZOOM_CLIENT_ID: z.string().trim().optional().transform((v) => v || undefined),
   ZOOM_CLIENT_SECRET: z.string().trim().optional().transform((v) => v || undefined),
+  // Browser pages allowed to call the API. The phone app doesn't need this (CORS only
+  // applies to browsers); locally it lets the app's web preview (`npx expo start --web`) in.
+  // In production there is no website, so it's normally left empty.
   CORS_ORIGINS: z
     .string()
-    .default("http://localhost:5173")
+    .default("http://localhost:8081")
     .transform((value) =>
       value
         .split(",")
@@ -42,9 +43,6 @@ const envSchema = z.object({
 // Extra checks for the live server: settings that are fine on a laptop but unsafe in production.
 const productionSchema = envSchema.superRefine((value, ctx) => {
   if (value.NODE_ENV !== "production") return;
-  if (!value.PUBLIC_WEB_URL.startsWith("https://")) {
-    ctx.addIssue({ code: "custom", path: ["PUBLIC_WEB_URL"], message: "must be the live website's https:// address in production" });
-  }
   for (const origin of value.CORS_ORIGINS) {
     if (!origin.startsWith("https://")) {
       ctx.addIssue({ code: "custom", path: ["CORS_ORIGINS"], message: `${origin} — only https:// websites may call the API in production` });

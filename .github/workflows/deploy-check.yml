@@ -1,11 +1,11 @@
 # Deployment check — makes sure the server setup in deploy/ still builds.
-# Builds the API and website Docker images (nothing is published) and validates
+# Builds the API Docker image (nothing is published) and validates
 # deploy/docker-compose.yml. Runs on pull requests that touch any of them.
 name: Deploy check
 
 on:
   pull_request:
-    paths: ["backend/**", "web/**", "deploy/**", ".github/workflows/deploy-check.yml"]
+    paths: ["backend/**", "deploy/**", ".github/workflows/deploy-check.yml"]
   push:
     branches: [main]
 
@@ -32,6 +32,3 @@ jobs:
 
       - name: Build migrations image
         run: docker build --target build -t siraat-migrate backend
-
-      - name: Build website image
-        run: docker build -t siraat-web web

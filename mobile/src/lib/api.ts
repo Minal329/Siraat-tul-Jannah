@@ -1,4 +1,4 @@
-// Talks to the backend API — the same rules as the website's client (web/src/lib/api.ts):
+// Talks to the backend API:
 // adds the login token, renews an expired login once and retries, and turns
 // { error: { code, message } } into an ApiError you can show.
 //
@@ -14,11 +14,23 @@ export const API_URL: string = process.env.EXPO_PUBLIC_API_URL ?? "http://localh
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
-  constructor(status: number, code: string, message: string) {
+  readonly details?: unknown;
+  constructor(status: number, code: string, message: string, details?: unknown) {
     super(message);
     this.status = status;
     this.code = code;
+    this.details = details;
   }
+}
+
+// The message to show a person. For "some fields are invalid" the API lists each
+// problem (e.g. "Password must be at least 8 characters.") — show the first one.
+export function friendlyMessage(err: unknown): string {
+  if (err instanceof ApiError && err.code === "VALIDATION_ERROR" && Array.isArray(err.details)) {
+    const first = err.details.find((d): d is { message: string } => typeof d?.message === "string");
+    if (first) return first.message;
+  }
+  return err instanceof Error ? err.message : "Something went wrong. Please try again.";
 }
 
 export type Tokens = { accessToken: string; refreshToken: string; accessTokenExpiresIn: number };
@@ -122,7 +134,12 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new ApiError(res.status, body?.error?.code ?? `HTTP_${res.status}`, body?.error?.message ?? "Something went wrong. Please try again.");
+    throw new ApiError(
+      res.status,
+      body?.error?.code ?? `HTTP_${res.status}`,
+      body?.error?.message ?? "Something went wrong. Please try again.",
+      body?.error?.details,
+    );
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()).data as T;

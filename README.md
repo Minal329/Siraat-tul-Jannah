@@ -1,14 +1,13 @@
 # Siraat tul Jannah
 
-Islamic online learning platform (mobile app + website) for **Siraat tul Jannah
+Islamic online learning app for **Siraat tul Jannah
 Quran Academy** — course enrollment, payments, live classes, attendance, feedback,
 recorded lectures and certificates in one place.
 
 | Folder     | What it is                                   | Status            |
 |------------|----------------------------------------------|-------------------|
 | `backend/` | Node.js + Express API, PostgreSQL via Prisma | Complete (roadmap 1–15) |
-| `web/`     | React website (see `web/README.md`)          | All screens + live classes |
-| `mobile/`  | Expo app for students & teachers (see `mobile/README.md`) | Student + teacher screens |
+| `mobile/`  | Expo app for students, teachers & admins (see `mobile/README.md`) | Student + teacher screens, admin enrollments |
 | `deploy/`  | Live server setup: Docker Compose + Caddy + backups | Ready — see `docs/deployment.md` |
 | `docs/`    | Decisions log, roadmap, security checklist, deployment guide | — |
 

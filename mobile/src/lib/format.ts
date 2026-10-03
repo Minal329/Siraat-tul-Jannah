@@ -1,4 +1,4 @@
-// Money and dates, formatted the same way on every screen (same as web/src/lib/format.ts).
+// Money and dates, formatted the same way on every screen.
 
 export function formatPkr(amount: number) {
   return amount === 0 ? "Free" : `PKR ${amount.toLocaleString("en-PK")}`;

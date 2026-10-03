@@ -1,6 +1,6 @@
 # Mobile app (Expo)
 
-Android and iPhone app for **students and teachers** of Siraat tul Jannah. Admins use the website.
+Android and iPhone app for **students, teachers and admins** of Siraat tul Jannah — there is no website.
 
 | Screen | File |
 |---|---|
@@ -11,8 +11,15 @@ Android and iPhone app for **students and teachers** of Siraat tul Jannah. Admin
 | Live class (Zoom / WhatsApp) | `src/app/student/live/[id].tsx` |
 | Recorded lectures | `src/app/student/lectures.tsx` |
 | Feedback (text + voice notes) | `src/app/student/feedback.tsx` |
-| Certificate | `src/app/student/certificate/[number].tsx` |
+| Certificate — drawn in the app, **Save Image** (PNG to photos) / **Share** | `src/app/student/certificate/[number].tsx` |
 | Teacher dashboard (schedule, attendance, feedback, voice recording) | `src/app/teacher/index.tsx` |
+| Admin dashboard (applications, payment screenshots, approve & assign, reject, payment numbers) | `src/app/admin/index.tsx` |
+| Admin → Courses (add, edit, publish/unpublish) | `src/app/admin/courses.tsx` |
+| Admin → Class groups (teacher, schedule, dates, capacity, Zoom/WhatsApp, close a batch) | `src/app/admin/groups.tsx` |
+| Admin → Teachers (add with temporary password, reset password, disable) | `src/app/admin/teachers.tsx` |
+| Admin → Students (move group, mark complete, issue/view certificate, reset password) | `src/app/admin/students.tsx` |
+| Recorded lectures for teachers & admins (add video links, publish) | `src/app/teacher/lectures.tsx` |
+| Account (change password, log out) | `src/app/account.tsx` |
 
 ## Run it
 Start the API first (`cd backend && npm run dev`), then:
@@ -28,11 +35,11 @@ The app talks to `http://localhost:4000/api/v1` by default. A phone can't reach 
 
 ```
 EXPO_PUBLIC_API_URL=http://192.168.1.20:4000/api/v1
-EXPO_PUBLIC_WEB_URL=http://192.168.1.20:5173
 ```
 
 (Android emulator: use `http://10.0.2.2:4000/api/v1`.) To try it in a browser instead, press `w`
-after `npm start` and add `http://localhost:8081` to `CORS_ORIGINS` in `backend/.env`.
+after `npm start` (`CORS_ORIGINS` in `backend/.env` must include `http://localhost:8081`, the default).
+"Save Image" downloads the PNG in the browser; on a phone it goes to the photo gallery.
 
 ## Checks
 ```bash
