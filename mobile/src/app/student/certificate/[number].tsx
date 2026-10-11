@@ -1,6 +1,9 @@
 // Certificate (prototype screen 9): the certificate drawn in the app, with
 // "Save Image" (to the phone's photos) and "Share" (WhatsApp etc.) as a PNG.
+// The design comes from the API: a finished image uploaded for this student, the
+// course template it was issued with, or the built-in design.
 import { Stack, useLocalSearchParams } from "expo-router";
+import { lookOf } from "../../../components/CertificateCard.tsx";
 import { CertificateView } from "../../../components/CertificateView.tsx";
 import { Empty, Loaded, Screen } from "../../../components/ui.tsx";
 import { api } from "../../../lib/api.ts";
@@ -17,7 +20,7 @@ export default function CertificateScreen() {
   }, [number]);
 
   return (
-    <Screen>
+    <Screen onRefresh={state.reload} refreshing={state.loading && !!state.data}>
       <Stack.Screen options={{ title: "Certificate" }} />
       <Loaded state={state}>
         {(enrollment) =>
@@ -25,6 +28,7 @@ export default function CertificateScreen() {
             <Empty>Certificate not found.</Empty>
           ) : (
             <CertificateView
+              look={lookOf(enrollment.certificate)}
               certificate={{
                 studentName: user?.profile?.fullName ?? "",
                 courseTitle: enrollment.course.title,

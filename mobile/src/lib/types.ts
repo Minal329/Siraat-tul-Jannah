@@ -20,7 +20,16 @@ export type Course = {
   thumbnailUrl: string | null;
 };
 
-export type AdminCourse = Course & { isPublished: boolean };
+export type AdminCourse = Course & { isPublished: boolean; certificateTemplateUrl: string | null };
+
+// Which design a certificate uses: an uploaded finished image (shown as is), the
+// course template it was issued with (text drawn on top), or the built-in design.
+export type CertificateSummary = {
+  certificateNumber: string;
+  issuedAt: string;
+  design: "FINISHED" | "TEMPLATE" | "DEFAULT";
+  imageUrl: string | null;
+};
 
 export type PaymentMethod = "EASYPAISA" | "JAZZCASH" | "BANK_TRANSFER";
 
@@ -58,7 +67,7 @@ export type Enrollment = {
     zoomPasscode: string | null;
     zoomJoinUrl: string | null;
   } | null;
-  certificate: { certificateNumber: string; issuedAt: string } | null;
+  certificate: CertificateSummary | null;
   payments: Payment[];
 };
 
@@ -144,7 +153,7 @@ export type AdminEnrollment = {
   student: { id: string; userId: string; fullName: string; whatsappNumber: string | null; email: string };
   course: { id: string; title: string; feePkr: number };
   classGroup: { id: string; name: string } | null;
-  certificate: { certificateNumber: string; issuedAt: string } | null;
+  certificate: CertificateSummary | null;
   hasVerifiedPayment: boolean;
   payments: Payment[];
 };

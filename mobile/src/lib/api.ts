@@ -96,7 +96,7 @@ function renewLogin(): Promise<boolean> {
 // Endpoints that never need the login token.
 const PUBLIC_AUTH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"];
 
-type Options = { method?: "GET" | "POST" | "PUT" | "PATCH"; body?: unknown; form?: FormData };
+type Options = { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown; form?: FormData };
 
 function toUrl(path: string) {
   return path.startsWith("/api/v1/") ? `${API_URL}${path.slice("/api/v1".length)}` : `${API_URL}${path}`;

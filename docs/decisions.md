@@ -317,3 +317,30 @@ teachers) moves into the app, following the prototype's Admin Dashboard.
 - **Server:** Caddy now only provides HTTPS for the API (`/api/*`).
 **Alternative:** keep a tiny website just for certificate verification — rejected by the owner as not needed.
 
+
+## 031 — Certificate designs: course templates and finished images, uploaded from the app
+Certificates are **A4 landscape, 1600 × 1131 px**. Admins can give them a design from the phone, at any time:
+- **Per-course template** (Admin → Courses → Edit course → Certificate template): a background image;
+  the app writes the student's name, course, date and certificate number on top in fixed areas
+  (listed on that screen). The admin sees a preview with sample details before saving.
+- **Per-student finished image** (on an issued certificate; issuing opens it straight away): a complete
+  certificate made elsewhere, e.g. in Canva, with the name and date already on it. Shown as is.
+
+What a student sees, highest priority first: (1) the finished image for their certificate, (2) the
+template the course had **when the certificate was issued**, (3) the app's built-in design.
+Students still save/share a PNG of what's on screen, whichever design produced it.
+
+**Replacing a template never changes certificates already issued** (the safest choice): issuing
+*copies* the course's template onto the certificate (`certificates.template_key`), every upload is a
+new file under a new random name, and template files are never overwritten or deleted. Removing a
+template only affects certificates issued afterwards. To change one student's old certificate, the
+admin uploads a finished image for it. **Alternative:** certificates always follow the course's
+*current* template — simpler, but re-designing would silently change certificates students already
+saved and shared.
+
+**Upload rules** are the payment-screenshot rules: admins only, held in memory, 5 MB, JPG/PNG/WebP
+checked from the file's bytes, stored privately under random names, streamed only after a permission
+check (`GET /certificates/:number/image`: the certificate's student or an admin). On top of that the
+image must have the A4 landscape shape (1% leeway, so 3508 × 2480 or 842 × 595 exports work) and be at
+least 800 px wide; the message always names the required size. Image sizes are read with the
+`image-size` package.

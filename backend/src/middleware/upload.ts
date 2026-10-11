@@ -1,5 +1,5 @@
-// Accepts one uploaded file in a form field: payment screenshots (images) and
-// teacher voice notes (audio).
+// Accepts one uploaded file in a form field: payment screenshots and certificate
+// designs (images) and teacher voice notes (audio).
 //
 // Files are held in memory, not written to disk, until the route has checked
 // that the person is allowed to upload. Then we check the file's actual bytes:
@@ -47,13 +47,18 @@ export function detectAudioType(data: Buffer): AudioFileType | null {
   return null;
 }
 
-export function requireImage(file: Express.Multer.File | undefined) {
+// The messages default to the payment screenshot wording; other uploads
+// (certificate designs) pass their own.
+export function requireImage(
+  file: Express.Multer.File | undefined,
+  messages = { missing: "Please attach a screenshot of your payment.", invalid: "The screenshot must be a JPG, PNG or WebP image." },
+) {
   if (!file) {
-    throw new AppError(400, "FILE_REQUIRED", "Please attach a screenshot of your payment.");
+    throw new AppError(400, "FILE_REQUIRED", messages.missing);
   }
   const type = detectImageType(file.buffer);
   if (!type) {
-    throw new AppError(400, "INVALID_FILE", "The screenshot must be a JPG, PNG or WebP image.");
+    throw new AppError(400, "INVALID_FILE", messages.invalid);
   }
   return { data: file.buffer, type };
 }

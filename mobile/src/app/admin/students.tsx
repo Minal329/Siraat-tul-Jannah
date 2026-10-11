@@ -1,31 +1,21 @@
 // Admin → Students: everyone studying now or finished. For a current student:
 // move them to another group, or mark the course complete. For a finished one:
-// issue the certificate and view/save/share it. Plus password resets.
+// issue the certificate (then the certificate opens, where a finished image can be
+// uploaded for this student) and view/save/share it. Plus password resets.
 import { router, Stack } from "expo-router";
 import { useState } from "react";
-import { Alert, Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Sheet } from "../../components/Sheet.tsx";
 import { ResetPasswordButton } from "../../components/TemporaryPassword.tsx";
 import { Button, Card, Chip, Empty, ErrorText, Field, Loaded, Muted, Screen, styles } from "../../components/ui.tsx";
 import { api } from "../../lib/api.ts";
+import { confirm } from "../../lib/confirm.ts";
 import { formatDate } from "../../lib/format.ts";
 import { useAction, useLoad } from "../../lib/hooks.ts";
 import { colors, fonts } from "../../lib/theme.ts";
 import type { AdminClassGroup, AdminEnrollment } from "../../lib/types.ts";
 
 type Tab = "APPROVED" | "COMPLETED";
-
-// "Are you sure?" — a native dialog on phones, the browser's confirm in the web preview.
-function confirm(title: string, message: string, action: string, onYes: () => void) {
-  if (Platform.OS === "web") {
-    if (window.confirm(`${title}\n\n${message}`)) onYes();
-    return;
-  }
-  Alert.alert(title, message, [
-    { text: "Cancel", style: "cancel" },
-    { text: action, onPress: onYes },
-  ]);
-}
 
 export default function AdminStudents() {
   const [tab, setTab] = useState<Tab>("APPROVED");
@@ -74,8 +64,9 @@ function StudentCard({ enrollment: e, groups, onChanged }: { enrollment: AdminEn
     confirm("Mark course complete?", `${e.student.fullName} has finished ${e.course.title}. You can then issue the certificate.`, "Mark complete", async () => {
       if (await run(() => api(`/admin/enrollments/${e.id}/complete`, { body: {} }))) onChanged();
     });
+  // Opens the new certificate right away, so the admin can upload a finished image for it.
   const issue = async () => {
-    if (await run(() => api("/admin/certificates", { body: { enrollmentId: e.id } }))) onChanged();
+    if (await run(() => api("/admin/certificates", { body: { enrollmentId: e.id } }))) router.push(`/admin/certificate/${e.id}`);
   };
 
   return (

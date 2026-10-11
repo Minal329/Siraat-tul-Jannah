@@ -3,11 +3,13 @@
 // An admin issues one for a COMPLETED enrollment. Numbers look like
 // STJ-2026-00042-K7PX: a running number people can read out, plus four random
 // characters so numbers can't simply be guessed. The certificate itself is drawn
-// as an image inside the mobile app (mobile/src/components/CertificateCard.tsx).
+// as an image inside the mobile app (mobile/src/components/CertificateCard.tsx);
+// its design (template / finished image) is in certificateDesigns.service.ts.
 import { randomInt } from "node:crypto";
 import { prisma } from "../../lib/prisma.ts";
 import { AppError } from "../../utils/AppError.ts";
 import { getAdminId } from "../users/users.service.ts";
+import { toCertificateSummary } from "./certificateDesigns.service.ts";
 
 // No 0/O or 1/I/L, so a code read over the phone can't be misheard.
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -20,7 +22,10 @@ export async function issueCertificate(adminUserId: string, enrollmentId: string
   const adminId = await getAdminId(adminUserId);
 
   const certificate = await prisma.$transaction(async (tx) => {
-    const enrollment = await tx.enrollment.findUnique({ where: { id: enrollmentId }, include: { certificate: true } });
+    const enrollment = await tx.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: { certificate: true, course: { select: { certificateTemplateKey: true } } },
+    });
     if (!enrollment) throw new AppError(404, "NOT_FOUND", "Enrollment not found.");
     if (enrollment.status !== "COMPLETED") {
       throw new AppError(409, "NOT_COMPLETED", "Mark the course as completed before issuing a certificate.");
@@ -34,13 +39,12 @@ export async function issueCertificate(adminUserId: string, enrollmentId: string
     const issuedThisYear = await tx.certificate.count({ where: { certificateNumber: { startsWith: `STJ-${year}-` } } });
     const certificateNumber = `STJ-${year}-${String(issuedThisYear + 1).padStart(5, "0")}-${randomCode()}`;
 
-    return tx.certificate.create({ data: { enrollmentId, certificateNumber, issuedById: adminId } });
+    // The course's current template is copied onto the certificate, so changing the
+    // template later doesn't change certificates already issued.
+    return tx.certificate.create({
+      data: { enrollmentId, certificateNumber, issuedById: adminId, templateKey: enrollment.course.certificateTemplateKey },
+    });
   });
 
-  return {
-    certificate: {
-      certificateNumber: certificate.certificateNumber,
-      issuedAt: certificate.issuedAt,
-    },
-  };
+  return { certificate: toCertificateSummary(certificate) };
 }

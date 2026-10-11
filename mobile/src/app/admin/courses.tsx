@@ -1,12 +1,17 @@
 // Admin → Courses: every course (published or draft), add a new one, edit,
 // and publish/unpublish. Courses are never deleted — unpublishing hides a course
 // from the catalog while keeping its students' history.
+// Editing a course also manages its certificate template (a background image the
+// app writes each student's details on), with a preview before saving.
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { CertificateCard, TEXT_AREAS_HELP, type CertificateLook } from "../../components/CertificateCard.tsx";
 import { Sheet } from "../../components/Sheet.tsx";
-import { Button, Card, Chip, Empty, ErrorText, Field, Loaded, Muted, Screen, styles } from "../../components/ui.tsx";
+import { Button, Card, Chip, Empty, ErrorText, Field, Loaded, Muted, Notice, Screen, SectionTitle, styles } from "../../components/ui.tsx";
 import { api } from "../../lib/api.ts";
+import { certificateImageForm, pickCertificateImage, SIZE_RULES, type PickedImage } from "../../lib/certificateImage.ts";
+import { confirm } from "../../lib/confirm.ts";
 import { formatPkr } from "../../lib/format.ts";
 import { useAction, useLoad } from "../../lib/hooks.ts";
 import { colors, fonts } from "../../lib/theme.ts";
@@ -35,6 +40,7 @@ export default function AdminCourses() {
         <CourseSheet
           course={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
+          onTemplateChanged={state.reload}
           onSaved={() => {
             setEditing(null);
             void state.reload();
@@ -71,7 +77,7 @@ function CourseRow({ course: c, onEdit, onChanged }: { course: AdminCourse; onEd
 
 const toNumber = (value: string) => (value.trim() === "" ? null : Number(value.trim()));
 
-function CourseSheet({ course, onClose, onSaved }: { course: AdminCourse | null; onClose: () => void; onSaved: () => void }) {
+function CourseSheet({ course, onClose, onSaved, onTemplateChanged }: { course: AdminCourse | null; onClose: () => void; onSaved: () => void; onTemplateChanged: () => void }) {
   const [form, setForm] = useState({
     title: course?.title ?? "",
     description: course?.description ?? "",
@@ -116,7 +122,88 @@ function CourseSheet({ course, onClose, onSaved }: { course: AdminCourse | null;
       <Chip label="Show in the catalog (published)" selected={form.publish} onPress={() => setForm({ ...form, publish: !form.publish })} />
       <ErrorText error={error} />
       <Button large label={busy ? "Saving…" : course ? "Save changes" : "Add course"} onPress={save} disabled={busy} />
+
+      <SectionTitle>Certificate template</SectionTitle>
+      {course ? (
+        <CertificateTemplate course={course} onChanged={onTemplateChanged} />
+      ) : (
+        <Muted small>Add the course first, then open it again to give its certificates a template.</Muted>
+      )}
     </Sheet>
+  );
+}
+
+// The course's certificate template: a background image the app writes each
+// student's name, the course, the date and the certificate number on. Changes are
+// saved straight away (separately from "Save changes" above).
+function CertificateTemplate({ course, onChanged }: { course: AdminCourse; onChanged: () => void }) {
+  const [templateUrl, setTemplateUrl] = useState(course.certificateTemplateUrl);
+  const [picked, setPicked] = useState<PickedImage | null>(null);
+  const { busy, error, run } = useAction();
+  const path = `/admin/courses/${course.id}/certificate-template`;
+  const sample = {
+    studentName: "Student Name",
+    courseTitle: course.title,
+    certificateNumber: `STJ-${new Date().getFullYear()}-00001-SMPL`,
+    issuedAt: new Date().toISOString(),
+  };
+  const current: CertificateLook = templateUrl ? { kind: "TEMPLATE", path: templateUrl } : { kind: "DEFAULT" };
+
+  const choose = () =>
+    run(async () => {
+      const image = await pickCertificateImage();
+      if (image) setPicked(image);
+    });
+  const save = async () => {
+    const result = await run(async () =>
+      api<{ certificateTemplateUrl: string }>(path, { method: "PUT", form: await certificateImageForm(picked!) }),
+    );
+    if (result) {
+      setTemplateUrl(result.certificateTemplateUrl);
+      setPicked(null);
+      onChanged();
+    }
+  };
+  const remove = () =>
+    confirm(
+      "Remove the certificate template?",
+      "New certificates for this course will use the app's built-in design. Certificates already issued keep the design they were issued with.",
+      "Remove",
+      async () => {
+        if (await run(() => api(path, { method: "DELETE" }))) {
+          setTemplateUrl(null);
+          onChanged();
+        }
+      },
+    );
+
+  if (picked) {
+    return (
+      <>
+        <Notice>Preview with sample details. Check that nothing overlaps your design, then save.</Notice>
+        <CertificateCard certificate={sample} look={{ kind: "TEMPLATE", uri: picked.uri }} />
+        <ErrorText error={error} />
+        <View style={styles.row}>
+          <Button small label={busy ? "Saving…" : "Save template"} onPress={save} disabled={busy} />
+          <Button small variant="outline" label="Choose another" onPress={choose} disabled={busy} />
+          <Button small variant="outline" label="Cancel" onPress={() => setPicked(null)} disabled={busy} />
+        </View>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Muted small>{templateUrl ? "Certificates for this course are drawn on this template (sample details):" : "No template — certificates use the app's built-in design (sample details):"}</Muted>
+      <CertificateCard certificate={sample} look={current} />
+      <Muted small>Size: {SIZE_RULES}. {TEXT_AREAS_HELP}</Muted>
+      <Muted small>Changing or removing the template only affects certificates issued from now on — certificates already issued keep the design they were issued with.</Muted>
+      <ErrorText error={error} />
+      <View style={styles.row}>
+        <Button small variant="outline" label={templateUrl ? "Replace template" : "Upload template"} onPress={choose} disabled={busy} />
+        {templateUrl && <Button small variant="danger" label="Remove template" onPress={remove} disabled={busy} />}
+      </View>
+    </>
   );
 }
 

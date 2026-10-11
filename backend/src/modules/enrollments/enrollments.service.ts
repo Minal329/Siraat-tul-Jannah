@@ -8,6 +8,7 @@ import { Prisma } from "../../../generated/prisma/client.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { zoomJoinLink } from "../../lib/zoom.ts";
 import { AppError } from "../../utils/AppError.ts";
+import { certificateSummarySelect, toCertificateSummary } from "../certificates/certificateDesigns.service.ts";
 import { toPaymentSummary } from "../payments/payments.service.ts";
 import { getStudentId } from "../users/users.service.ts";
 
@@ -20,7 +21,7 @@ const enrollmentNotFound = () => new AppError(404, "NOT_FOUND", "Enrollment not 
 const enrollmentDetails = {
   course: { select: { id: true, title: true, slug: true, feePkr: true } },
   classGroup: { include: { teacher: { select: { fullName: true } } } },
-  certificate: { select: { certificateNumber: true, issuedAt: true } },
+  certificate: certificateSummarySelect,
   payments: { orderBy: { createdAt: "desc" } },
 } as const;
 type EnrollmentWithDetails = Prisma.EnrollmentGetPayload<{ include: typeof enrollmentDetails }>;
@@ -51,7 +52,7 @@ function toStudentEnrollment(enrollment: EnrollmentWithDetails) {
           zoomJoinUrl: isCurrent ? zoomJoinLink(group) : null,
         }
       : null,
-    certificate: enrollment.certificate,
+    certificate: enrollment.certificate && toCertificateSummary(enrollment.certificate),
     payments: enrollment.payments.map(toPaymentSummary),
   };
 }

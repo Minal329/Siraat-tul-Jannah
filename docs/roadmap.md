@@ -28,5 +28,8 @@ top of the one before, so it can be tested before moving on.
 - [x] **20. Admin: complete courses & issue certificates** — Students screen: move group, mark complete,
   issue, view/save/share the certificate image, reset passwords
 
+- [x] **21. Certificate designs** — A4 landscape; per-course templates (with preview) and per-student
+  finished images, uploaded from the app; issued certificates keep their design (decision 031)
+
 Everything on the roadmap is built. Next: test on real phones (Expo Go / an Android test build),
 then go live with `docs/deployment.md`.

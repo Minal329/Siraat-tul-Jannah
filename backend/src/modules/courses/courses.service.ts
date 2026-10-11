@@ -3,6 +3,7 @@
 import { Prisma } from "../../../generated/prisma/client.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { AppError } from "../../utils/AppError.ts";
+import { templateUrl } from "../certificates/certificateDesigns.service.ts";
 import type { CreateCourseInput, UpdateCourseInput } from "./courses.schemas.ts";
 
 type CourseRow = Prisma.CourseGetPayload<object>;
@@ -27,6 +28,7 @@ function toAdminCourse(course: CourseRow) {
   return {
     ...toPublicCourse(course),
     isPublished: course.isPublished,
+    certificateTemplateUrl: templateUrl(course.id, course.certificateTemplateKey),
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,
   };
