@@ -135,7 +135,8 @@ describe("certificates", () => {
     expect(res.status).toBe(201);
     const year = new Date().getUTCFullYear();
     expect(res.body.data.certificate.certificateNumber).toMatch(new RegExp(`^STJ-${year}-00001-[A-Z2-9]{4}$`));
-    expect(res.body.data.certificate).toEqual({ certificateNumber: expect.any(String), issuedAt: expect.any(String) });
+    // No template on the course: the app's built-in design.
+    expect(res.body.data.certificate).toEqual({ certificateNumber: expect.any(String), issuedAt: expect.any(String), design: "DEFAULT", imageUrl: null });
   });
 
   it("only for completed courses, and only once", async () => {
@@ -169,19 +170,22 @@ describe("certificates", () => {
 
     expect(mine.body.data.enrollments[0]).toMatchObject({
       course: { title: "Tajweed" },
-      certificate: { certificateNumber, issuedAt: expect.any(String) },
+      certificate: { certificateNumber, issuedAt: expect.any(String), design: "DEFAULT", imageUrl: null },
     });
-    expect(Object.keys(mine.body.data.enrollments[0].certificate).sort()).toEqual(["certificateNumber", "issuedAt"]);
+    // Built field by field: storage keys and internal ids never reach the app.
+    expect(Object.keys(mine.body.data.enrollments[0].certificate).sort()).toEqual(["certificateNumber", "design", "imageUrl", "issuedAt"]);
   });
 
   it("there is no public verification page or PDF any more", async () => {
     const { adminAuth, hira } = await completed();
     const { certificateNumber } = (await issue(adminAuth, hira.enrollment.id)).body.data.certificate;
 
-    const verify = await request(app).get(`/api/v1/certificates/verify/${certificateNumber}`);
+    // /certificates/* now needs a login (only the certificate image lives there).
+    const publicVerify = await request(app).get(`/api/v1/certificates/verify/${certificateNumber}`);
+    const verify = await request(app).get(`/api/v1/certificates/verify/${certificateNumber}`).set("Authorization", hira.auth);
     const pdf = await request(app).get(`/api/v1/certificates/${certificateNumber}/pdf`).set("Authorization", hira.auth);
 
-    expect([verify.status, pdf.status]).toEqual([404, 404]);
+    expect([publicVerify.status, verify.status, pdf.status]).toEqual([401, 404, 404]);
   });
 
   it("issuing is admin-only", async () => {

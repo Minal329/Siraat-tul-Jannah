@@ -4,7 +4,7 @@
 // Staff-only endpoints live under /admin/... and the teacher's area under /teacher/...
 import { Router } from "express";
 import { createAuthRouter } from "../modules/auth/auth.routes.ts";
-import { adminCertificatesRouter } from "../modules/certificates/certificates.routes.ts";
+import { adminCertificatesRouter, certificatesRouter } from "../modules/certificates/certificates.routes.ts";
 import { adminCoursesRouter, coursesRouter } from "../modules/courses/courses.routes.ts";
 import { adminClassGroupsRouter } from "../modules/class-groups/classGroups.routes.ts";
 import { adminEnrollmentsRouter, enrollmentsRouter } from "../modules/enrollments/enrollments.routes.ts";
@@ -26,6 +26,7 @@ export function createApiRouter() {
   apiRouter.use("/payment-accounts", paymentAccountsRouter);
   apiRouter.use("/payments", paymentsRouter);
   apiRouter.use("/lectures", lecturesRouter);
+  apiRouter.use("/certificates", certificatesRouter);
   apiRouter.use("/feedback", feedbackRouter);
   apiRouter.use("/teacher/feedback", teacherFeedbackRouter);
   apiRouter.use("/teacher/lectures", teacherLecturesRouter);

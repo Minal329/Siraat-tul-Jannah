@@ -11,7 +11,7 @@ import * as fake from "../test-helpers/fakeApi.ts";
 jest.mock("../lib/api.ts", () => require("../test-helpers/fakeApi.ts").apiModule);
 jest.mock("expo-router", () => require("../test-helpers/fakeApi.ts").routerModule);
 
-const course = { id: "c1", title: "Noorani Qaida", slug: "noorani-qaida", description: "Learn the letters.", level: "Beginner", durationWeeks: 12, feePkr: 2000, thumbnailUrl: null, isPublished: false };
+const course = { id: "c1", title: "Noorani Qaida", slug: "noorani-qaida", description: "Learn the letters.", level: "Beginner", durationWeeks: 12, feePkr: 2000, thumbnailUrl: null, isPublished: false, certificateTemplateUrl: null };
 const teacher = { id: "t1", userId: "ut1", fullName: "Ustadha Maryam", email: "maryam@x.pk", whatsappNumber: null, isActive: true, activeClassGroups: 1 };
 const group = {
   id: "g1", name: "Qaida — Evening", batchLabel: null, scheduleText: "Mon/Wed 8pm", startDate: "2027-01-15T00:00:00.000Z", endDate: null,
@@ -160,7 +160,7 @@ describe("Students (step 20)", () => {
     fake.responses["/admin/enrollments?status=COMPLETED"] = {
       enrollments: [
         enrollment("e2", "COMPLETED"),
-        enrollment("e3", "COMPLETED", { certificate: { certificateNumber: "STJ-2026-00001-K7PX", issuedAt: "2026-09-29T00:00:00.000Z" } }),
+        enrollment("e3", "COMPLETED", { certificate: { certificateNumber: "STJ-2026-00001-K7PX", issuedAt: "2026-09-29T00:00:00.000Z", design: "DEFAULT", imageUrl: null } }),
       ],
     };
     fake.responses["/admin/class-groups"] = { classGroups: [group, { ...group, id: "g2", name: "Qaida — Morning", studentCount: 1 }] };
@@ -183,14 +183,15 @@ describe("Students (step 20)", () => {
     await waitFor(() => expect(fake.writes()).toEqual([{ path: "/admin/enrollments/e1/move", method: "POST", body: { classGroupId: "g2" } }]));
   });
 
-  it("issues a certificate for a finished course, and opens an issued one", async () => {
+  it("issues a certificate (then opens it, to upload a finished image if wanted), and opens an issued one", async () => {
     await render(<AdminStudents />);
     await fireEvent.press(await screen.findByRole("button", { name: /Completed/ }));
     await fireEvent.press(screen.getByRole("button", { name: "Issue certificate" }));
     await waitFor(() => expect(fake.writes()).toEqual([{ path: "/admin/certificates", method: "POST", body: { enrollmentId: "e2" } }]));
+    expect(fake.pushed).toEqual(["/admin/certificate/e2"]);
 
     await fireEvent.press(screen.getByRole("button", { name: "View certificate" }));
-    expect(fake.pushed).toEqual(["/admin/certificate/e3"]);
+    expect(fake.pushed).toEqual(["/admin/certificate/e2", "/admin/certificate/e3"]);
   });
 
   it("searches by name", async () => {

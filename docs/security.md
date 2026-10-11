@@ -33,6 +33,8 @@ Re-read this list whenever a feature touches logins, files, money or children's 
 | Check | Status |
 |---|---|
 | Uploads kept in memory, size-limited (5 MB images, 10 MB audio), type checked from the file's bytes | ✅ |
+| Certificate designs (course templates, finished images): admins only, same image rules + A4 landscape shape check | ✅ (tests) |
+| Certificate images: only the certificate's student or an admin (another student / a teacher gets 404) | ✅ (tests) |
 | Stored under random names, never served as public files — streamed after an ownership check | ✅ |
 | Storage keys checked against a strict pattern (no `../` tricks) | ✅ |
 

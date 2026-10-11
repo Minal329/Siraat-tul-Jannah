@@ -16,7 +16,7 @@ jest.mock("../lib/api.ts", () => ({
         id: "e1",
         status: "COMPLETED",
         course: { id: "c1", title: "Noorani Qaida", slug: "noorani-qaida", feePkr: 2000 },
-        certificate: { certificateNumber: "STJ-2026-00001-K7PX", issuedAt: "2026-09-29T10:00:00.000Z" },
+        certificate: { certificateNumber: "STJ-2026-00001-K7PX", issuedAt: "2026-09-29T10:00:00.000Z", design: "DEFAULT", imageUrl: null },
         payments: [],
         classGroup: null,
       },

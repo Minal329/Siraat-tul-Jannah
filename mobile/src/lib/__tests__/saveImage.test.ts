@@ -19,9 +19,9 @@ beforeEach(() => {
 });
 
 describe("saving the certificate as an image", () => {
-  it("captures a sharp PNG and saves it to the photos", async () => {
+  it("captures a sharp A4 landscape PNG and saves it to the photos", async () => {
     await expect(saveViewAsImage(view, "certificate.png")).resolves.toBe("Saved to your photos ✓");
-    expect(mockCapture).toHaveBeenCalledWith(view, expect.objectContaining({ format: "png", width: 1080, result: "tmpfile" }));
+    expect(mockCapture).toHaveBeenCalledWith(view, expect.objectContaining({ format: "png", width: 1600, height: 1131, result: "tmpfile" }));
     expect(mockRequest).toHaveBeenCalledWith(true); // write-only: the app never reads the photos
     expect(mockCreate).toHaveBeenCalledWith("file:///tmp/certificate.png");
   });

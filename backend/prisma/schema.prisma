@@ -126,7 +126,7 @@ model Student {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
   attendance  Attendance[]
   feedback    Feedback[]
@@ -174,17 +174,20 @@ model Admin {
 // ─────────────────────── Courses & class groups ──────────────────────
 
 model Course {
-  id            String   @id @default(uuid()) @db.Uuid
-  title         String
-  slug          String   @unique // URL-friendly name, e.g. "tajweed-basics"
-  description   String
-  level         String? // e.g. "Beginner"
-  durationWeeks Int?     @map("duration_weeks")
-  feePkr        Int      @map("fee_pkr")
-  thumbnailUrl  String?  @map("thumbnail_url")
-  isPublished   Boolean  @default(false) @map("is_published")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id                     String   @id @default(uuid()) @db.Uuid
+  title                  String
+  slug                   String   @unique // URL-friendly name, e.g. "tajweed-basics"
+  description            String
+  level                  String? // e.g. "Beginner"
+  durationWeeks          Int?     @map("duration_weeks")
+  feePkr                 Int      @map("fee_pkr")
+  thumbnailUrl           String?  @map("thumbnail_url")
+  // Background image the app draws certificates on (storage key, e.g.
+  // "certificate-templates/<uuid>.png"). Null = the app's built-in design.
+  certificateTemplateKey String?  @map("certificate_template_key")
+  isPublished            Boolean  @default(false) @map("is_published")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
 
   classGroups ClassGroup[]
   enrollments Enrollment[]
@@ -387,6 +390,12 @@ model Certificate {
   certificateNumber String   @unique @map("certificate_number") // e.g. "STJ-2027-00042-K7PX"; the app draws the image
   issuedAt          DateTime @default(now()) @map("issued_at")
   issuedById        String?  @map("issued_by_id") @db.Uuid
+  // The course's template at the moment of issuing. Copied, never followed, so
+  // replacing the course's template later can't change a certificate already issued.
+  templateKey       String?  @map("template_key")
+  // A complete, ready-made certificate image uploaded for this one student. Shown
+  // as is, ahead of any template.
+  finishedImageKey  String?  @map("finished_image_key")
 
   enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
   issuedBy   Admin?     @relation(fields: [issuedById], references: [id], onDelete: SetNull)

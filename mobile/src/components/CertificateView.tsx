@@ -1,36 +1,40 @@
 // The certificate plus its "Save Image" and "Share" buttons (prototype's Certificate
 // screen). Used by students (their own) and admins (any student's, e.g. to send to a parent).
+// Whichever design the certificate has, it is saved/shared the same way: as a PNG
+// of the card — once its design image has loaded.
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useAction } from "../lib/hooks.ts";
 import { saveViewAsImage, shareViewAsImage } from "../lib/saveImage.ts";
 import { colors, fonts } from "../lib/theme.ts";
-import { CertificateCard, type CertificateDetails } from "./CertificateCard.tsx";
+import { CertificateCard, type CardStatus, type CertificateDetails, type CertificateLook } from "./CertificateCard.tsx";
 import { Icon } from "./Icon.tsx";
 import { ErrorText, Notice } from "./ui.tsx";
 
-export function CertificateView({ certificate }: { certificate: CertificateDetails }) {
+export function CertificateView({ certificate, look }: { certificate: CertificateDetails; look: CertificateLook }) {
   const card = useRef<View>(null);
+  const [status, setStatus] = useState<CardStatus>("loading");
+  const waiting = status !== "ready"; // nothing to save until the design image is there
   const [saved, setSaved] = useState<string | null>(null);
   const { busy, error, run } = useAction();
   const fileName = `Siraat-tul-Jannah-certificate-${certificate.certificateNumber}.png`;
 
   return (
     <>
-      <CertificateCard ref={card} certificate={certificate} />
+      <CertificateCard ref={card} certificate={certificate} look={look} onStatusChange={setStatus} />
       <View style={{ flexDirection: "row", gap: 10 }}>
         <ActionButton
           icon="download"
-          label={busy ? "Please wait…" : "Save Image"}
+          label={busy ? "Please wait…" : status === "loading" ? "Loading…" : "Save Image"}
           primary
-          disabled={busy}
+          disabled={busy || waiting}
           onPress={async () => {
             setSaved(null);
             const message = await run(() => saveViewAsImage(card, fileName));
             if (message) setSaved(message);
           }}
         />
-        <ActionButton icon="share" label="Share" disabled={busy} onPress={() => run(() => shareViewAsImage(card, fileName))} />
+        <ActionButton icon="share" label="Share" disabled={busy || waiting} onPress={() => run(() => shareViewAsImage(card, fileName))} />
       </View>
       {saved && <Notice>{saved}</Notice>}
       <ErrorText error={error} />

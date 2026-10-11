@@ -9,6 +9,7 @@ import type { Prisma } from "../../../generated/prisma/client.ts";
 import type { EnrollmentStatus } from "../../../generated/prisma/enums.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { AppError } from "../../utils/AppError.ts";
+import { certificateSummarySelect, toCertificateSummary } from "../certificates/certificateDesigns.service.ts";
 import { toPaymentSummary } from "../payments/payments.service.ts";
 import { getAdminId } from "../users/users.service.ts";
 
@@ -19,7 +20,7 @@ const adminDetails = {
   course: { select: { id: true, title: true, feePkr: true } },
   classGroup: { select: { id: true, name: true } },
   payments: { orderBy: { createdAt: "desc" } },
-  certificate: { select: { certificateNumber: true, issuedAt: true } },
+  certificate: certificateSummarySelect,
 } as const;
 type AdminEnrollment = Prisma.EnrollmentGetPayload<{ include: typeof adminDetails }>;
 
@@ -40,7 +41,7 @@ function toAdminEnrollment(enrollment: AdminEnrollment) {
     },
     course: enrollment.course,
     classGroup: enrollment.classGroup,
-    certificate: enrollment.certificate,
+    certificate: enrollment.certificate && toCertificateSummary(enrollment.certificate),
     hasVerifiedPayment: enrollment.payments.some((p) => p.status === "VERIFIED"),
     payments: enrollment.payments.map(toPaymentSummary),
   };

@@ -58,7 +58,8 @@ Logo: open book + pen in a gold sunburst circle badge.
   their own groups, admins see all), `/enrollments/schedule`, `/enrollments/:id/attendance`,
   `/teacher/feedback` (send text/voice, list sent), `/feedback/mine`, `/feedback/:id/read`,
   `/feedback/:id/voice` (student, its teacher, or admin), `/lectures` (students), `/teacher/lectures`,
-  `/admin/certificates` (issue),
+  `/admin/certificates` (issue; `/:number/image` PUT/DELETE finished image), `/certificates/:number/image`,
+  `/admin/courses/:id/certificate-template` (PUT/GET/DELETE),
   `/teacher/sessions/:id/start|live|end`, `/enrollments/:id/live` + `/live/join`,
   `/admin/class-groups/zoom-status`, `/admin/class-groups/:id/zoom-meeting`,
   `/admin/users/:id/reset-password` (students/teachers; temporary password shown once).
@@ -72,7 +73,10 @@ Logo: open book + pen in a gold sunburst circle badge.
   our server. `toEmbedUrl` turns YouTube/Vimeo links into in-app player URLs.
 - Certificates: numbers `STJ-<year>-<00001>-<4 random chars>`; the running number is assigned under a
   Postgres advisory lock. No PDF and no public verify page: the app draws the certificate
-  (`mobile/src/components/CertificateCard.tsx`) and saves/shares it as a PNG (`lib/saveImage.ts`).
+  (`mobile/src/components/CertificateCard.tsx`, A4 landscape 1600 × 1131) and saves/shares it as a PNG
+  (`lib/saveImage.ts`). Designs (`certificateDesigns.service.ts`, decision 031): finished image for that
+  certificate > the course template **copied onto the certificate when issued** > built-in design.
+  Never make issued certificates follow a course's current template; never overwrite/delete template files.
   Staff-only endpoints go under `/admin/...`, the teacher's area under `/teacher/...`.
 - Teacher ownership: `loadGroupFor(auth, groupId)` in `sessions.service.ts` — another teacher's group
   answers 404. Reuse it for anything a teacher does to "their" class.
@@ -88,7 +92,7 @@ Logo: open book + pen in a gold sunburst circle badge.
   token triggers "log out everywhere". Logout / password change / disabling just set `revokedAt`.
 - Identity helpers: `getStudentId` / `getTeacherId` / `getAdminId` (`modules/users/users.service.ts`) turn `req.auth.userId`
   into the role profile's id.
-- Uploads (`middleware/upload.ts`): `imageUpload("field")` + `requireImage(req.file)` (5 MB) or
+- Uploads (`middleware/upload.ts`): `imageUpload("field")` + `requireImage(req.file)` (5 MB; certificate designs: `requireCertificateImage`) or
   `audioUpload("field")` + `requireAudio(file)` (10 MB) — memory only, type checked from the file's bytes. Save with `saveFile` / read with `locateFile` (`lib/storage.ts`,
   folder `UPLOAD_DIR`). Never serve uploads statically: stream them from a route that checks who is asking.
   `payments.proof_image_url` and `feedback.voice_url` hold storage keys (e.g. `payments/<uuid>.png`),

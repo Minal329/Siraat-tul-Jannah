@@ -3,16 +3,16 @@
 import type { RefObject } from "react";
 import { Platform, type View } from "react-native";
 import { captureRef } from "react-native-view-shot";
-
-// 1080 px wide: sharp on any phone and when printed at A5.
-const WIDTH = 1080;
+import { CERTIFICATE_HEIGHT, CERTIFICATE_WIDTH } from "./certificateImage.ts";
 
 async function capture(view: RefObject<View | null>) {
   if (!view.current) throw new Error("The certificate isn't ready yet. Please try again.");
   return captureRef(view, {
     format: "png",
     quality: 1,
-    width: WIDTH,
+    // A4 landscape, 1600 × 1131 px: sharp on any phone and when printed.
+    width: CERTIFICATE_WIDTH,
+    height: CERTIFICATE_HEIGHT,
     result: Platform.OS === "web" ? "data-uri" : "tmpfile",
   });
 }
